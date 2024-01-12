@@ -1,5 +1,7 @@
 package com.secret.platform.secret;
 
+import com.secret.platform.avatar.Avatar;
+import com.secret.platform.avatar.AvatarRepository;
 import com.secret.platform.category.Category;
 import com.secret.platform.category.CategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,7 +9,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.awt.print.Pageable;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -15,10 +16,12 @@ import java.util.List;
 public class SecretService {
 
     private final SecretRepository secretRepository;
+    private final AvatarRepository avatarRepository;  // Inject the AvatarRepository
 
     @Autowired
-    public SecretService(SecretRepository secretRepository, CategoryRepository categoryRepository) {
+    public SecretService(SecretRepository secretRepository, CategoryRepository categoryRepository, AvatarRepository avatarRepository) {
         this.secretRepository = secretRepository;
+        this.avatarRepository = avatarRepository;
     }
 
     public List<Secret> getAllSecrets() {
@@ -32,8 +35,18 @@ public class SecretService {
     public Secret saveSecret(Secret secret) {
         if (secret.getId() == null) {  // Indicates it's a new Secret
             secret.setDateCreated(LocalDateTime.now());
+
+            // Choose an avatar and set it. This is a basic example that would need to be modified based on your needs.
+            Avatar avatar = chooseAvatarForSecret();
+            secret.setAvatar(avatar);
         }
+
         return secretRepository.save(secret);
+    }
+
+    private Avatar chooseAvatarForSecret() {
+        // For example, fetch the first avatar (you might want a different logic)
+        return avatarRepository.findAll(PageRequest.of(0, 1)).getContent().get(0);
     }
 
     public void deleteSecret(Long id) {
@@ -53,12 +66,5 @@ public class SecretService {
         return secretRepository.save(secret);
     }
 
-    /*
-    public List<Secret> getMostLikedSecretsByCategory(Long categoryId, int limit) {
-        Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new IllegalArgumentException("Category not found for id: " + categoryId));
-        Pageable pageable = (Pageable) PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "likesCount"));
-        return secretRepository.findByCategoryOrderByLikesCountDesc(category, pageable);
-    }
-*/
+
 }

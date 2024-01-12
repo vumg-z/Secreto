@@ -18,16 +18,19 @@ public class SecretController {
         this.secretService = secretService;
     }
 
+    @CrossOrigin(origins = "http://127.0.0.1:5500")
     @GetMapping
     public List<Secret> getAllSecrets() {
         return secretService.getAllSecrets();
     }
 
+    @CrossOrigin(origins = "http://127.0.0.1:5500")
     @GetMapping("/{id}")
     public Secret getSecretById(@PathVariable Long id) {
         return secretService.getSecretById(id);
     }
 
+    @CrossOrigin(origins = "http://127.0.0.1:5500")
     @PostMapping
     public Secret saveSecret(@RequestBody Secret secret) {
         return secretService.saveSecret(secret);
@@ -37,7 +40,7 @@ public class SecretController {
     public void deleteSecret(@PathVariable Long id) {
         secretService.deleteSecret(id);
     }
-
+    @CrossOrigin(origins = "http://127.0.0.1:5500")
     @GetMapping("/category/{categoryId}")
     public List<Secret> getSecretsByCategory(@PathVariable Long categoryId) {
         return secretService.getSecretsByCategory(categoryId);
