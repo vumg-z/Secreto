@@ -26,3 +26,6 @@ CREATE TABLE secret (
     FOREIGN KEY (category_id) REFERENCES category(id)
 );
 
+
+
+

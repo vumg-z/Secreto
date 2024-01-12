@@ -43,8 +43,6 @@ public class Avatar {
         return imageUrl;
     }
 
-
-
     // ... other attributes ...
 
     // ... getters and setters ...

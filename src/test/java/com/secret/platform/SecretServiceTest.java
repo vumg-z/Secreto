@@ -1,5 +1,7 @@
 package com.secret.platform;
 
+import com.secret.platform.avatar.Avatar;
+import com.secret.platform.avatar.AvatarRepository;
 import com.secret.platform.secret.Secret;
 import com.secret.platform.secret.SecretRepository;
 import com.secret.platform.secret.SecretService;
@@ -8,6 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,6 +28,8 @@ public class SecretServiceTest {
 
     @Mock
     private SecretRepository secretRepository;
+    @Mock
+    private AvatarRepository avatarRepository;
 
     @BeforeEach
     public void setUp() {
@@ -59,6 +66,13 @@ public class SecretServiceTest {
     public void saveSecretTest() {
         Secret secret = new Secret();
 
+        // Create a mock Avatar page result
+        Avatar avatar = new Avatar();
+        Page<Avatar> mockPage = new PageImpl<>(List.of(avatar));
+
+        // Mock the behavior of avatarRepository.findAll(Pageable)
+        when(avatarRepository.findAll(any(PageRequest.class))).thenReturn(mockPage);
+
         when(secretRepository.save(secret)).thenReturn(secret);
 
         Secret result = secretService.saveSecret(secret);
@@ -66,6 +80,7 @@ public class SecretServiceTest {
         assertNotNull(result);
         verify(secretRepository, times(1)).save(secret);
     }
+
 
     @Test
     public void deleteSecretTest() {
@@ -81,6 +96,9 @@ public class SecretServiceTest {
         Secret secret = new Secret();
         secret.setText("Test Secret Text");
         System.out.println("Given Secret Text: " + secret.getText());
+
+        when(avatarRepository.findAll(any(PageRequest.class))).thenReturn(new PageImpl<>(List.of(new Avatar())));
+
 
         when(secretRepository.save(any(Secret.class))).thenAnswer(invocation -> {
             Secret savedSecret = invocation.getArgument(0);
