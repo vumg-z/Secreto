@@ -1,7 +1,9 @@
 package com.secret.platform.parser;
 
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.regex.Pattern;
@@ -10,7 +12,8 @@ import java.util.regex.Matcher;
 @RestController
 public class ParserController {
 
-    @GetMapping("/parser")
+    @GetMapping(value = "/parser", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
     public Triple<Double, Double, Double> parseEquation(@RequestParam String equation) {
         return parseEquationLogic(equation);
     }
@@ -55,6 +58,16 @@ public class ParserController {
             this.third = third;
         }
 
-        // Getters and Setters for first, second, and third
+        public A getFirst() {
+            return first;
+        }
+
+        public B getSecond() {
+            return second;
+        }
+
+        public C getThird() {
+            return third;
+        }
     }
 }
