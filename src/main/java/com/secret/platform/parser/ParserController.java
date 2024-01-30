@@ -18,6 +18,8 @@ public class ParserController {
         return parseEquationLogic(equation);
     }
 
+
+
     private Triple<Double, Double, Double> parseEquationLogic(String equation) {
         Pattern pattern = Pattern.compile("\\s*([+-]?\\s*\\d*\\.?\\d*\\s*x)?\\s*([+-]?\\s*\\d*\\.?\\d*\\s*y)?\\s*=\\s*([+-]?\\s*\\d*\\.?\\d*)\\s*");
         Matcher matcher = pattern.matcher(equation.trim());
