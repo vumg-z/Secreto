@@ -15,11 +15,11 @@ class SodaConRusa extends DecoradorBebida {
 
     @Override
     public double tamano() {
-        return 0;
+        return 1;
     }
 
     @Override
     public String getDescripcion() {
-        return bebida.getDescripcion() + " Soda Rusa";
+        return bebida.getDescripcion() + " Rusa";
     }
 }
