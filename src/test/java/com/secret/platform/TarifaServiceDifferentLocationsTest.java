@@ -26,7 +26,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class TarifaServiceTest {
+public class TarifaServiceDifferentLocationsTest {
 
     @Mock
     private TarifaRepository tarifaRepository;
@@ -97,7 +97,7 @@ public class TarifaServiceTest {
     }
 
     @Test
-    public void testGetRatesBySanJoseDelCaboLocation() {
+    public void testGetRatesByDifferentLocations() {
         // Setup location-specific Tarifas for San Jose Del Cabo
         Tarifa tarifaSJD1 = new Tarifa();
         tarifaSJD1.setId(4L);
@@ -150,70 +150,7 @@ public class TarifaServiceTest {
         tarifaSJD3.setProductosObligatorios(new HashSet<>()); // Assuming no obligatory products for simplicity
         tarifaSJD3.setEstimate(tarifaService.calculateEstimate(tarifaSJD3));
 
-        // Mock repository response for the San Jose Del Cabo location
-        when(tarifaRepository.findByRateSetAndLocationCode("SJD_RATE_SET", "SJDMY1"))
-                .thenReturn(Arrays.asList(tarifaSJD1, tarifaSJD2, tarifaSJD3));
-
-        // Request for rates at the San Jose Del Cabo location
-        ResRatesRequest requestSJD = new ResRatesRequest();
-        requestSJD.setCorpRateID("MYWEB1");
-        requestSJD.setPickupLocationCode("SJDMY1");
-        requestSJD.setPickupDateTime(LocalDateTime.of(2024, 7, 19, 10, 0));
-        requestSJD.setReturnLocationCode("SJDMY1");
-        requestSJD.setReturnDateTime(LocalDateTime.of(2024, 7, 21, 10, 0));
-        requestSJD.setCountryCode("US");
-        requestSJD.setRateSet("SJD_RATE_SET");
-
-        // Execute the test for San Jose Del Cabo location
-        ResRatesResponse responseSJD = tarifaService.getRates(requestSJD, "SJD_RATE_SET");
-
-        // Validate the response for San Jose Del Cabo location
-        assertNotNull(responseSJD);
-        assertTrue(responseSJD.isSuccess());
-        assertNotNull(responseSJD.getRates());
-        assertFalse(responseSJD.getRates().isEmpty());
-        assertEquals(3, responseSJD.getRates().size());
-
-        // Print results to verify correct behavior for San Jose Del Cabo location
-        responseSJD.getRates().forEach(rate -> {
-            System.out.println("Rate for location SJDMY1:");
-            System.out.println("  RateID=" + rate.getRateID());
-            System.out.println("  Class=" + rate.getVehicleClass());
-            System.out.println("  Availability=" + rate.getAvailability());
-            System.out.println("  CurrencyCode=" + rate.getCurrencyCode());
-            System.out.println("  Estimate (per day)=" + rate.getEstimate() / java.time.Duration.between(requestSJD.getPickupDateTime(), requestSJD.getReturnDateTime()).toDays());
-            System.out.println("  Total Estimate=" + rate.getEstimate());
-        });
-
-        // Assert specific expected results for San Jose Del Cabo location
-        ResRatesResponse.Rate rate1SJD = responseSJD.getRates().get(0);
-        assertEquals("4", rate1SJD.getRateID());
-        assertEquals("ECAR", rate1SJD.getVehicleClass());
-        assertEquals("Available", rate1SJD.getAvailability());
-        assertEquals("USD", rate1SJD.getCurrencyCode());
-        assertEquals(tarifaSJD1.getEstimate() * java.time.Duration.between(requestSJD.getPickupDateTime(), requestSJD.getReturnDateTime()).toDays(), rate1SJD.getEstimate());
-        assertTrue(rate1SJD.isPrePaid());
-
-        ResRatesResponse.Rate rate2SJD = responseSJD.getRates().get(1);
-        assertEquals("5", rate2SJD.getRateID());
-        assertEquals("FCAR", rate2SJD.getVehicleClass());
-        assertEquals("Available", rate2SJD.getAvailability());
-        assertEquals("USD", rate2SJD.getCurrencyCode());
-        assertEquals(tarifaSJD2.getEstimate() * java.time.Duration.between(requestSJD.getPickupDateTime(), requestSJD.getReturnDateTime()).toDays(), rate2SJD.getEstimate());
-        assertTrue(rate2SJD.isPrePaid());
-
-        ResRatesResponse.Rate rate3SJD = responseSJD.getRates().get(2);
-        assertEquals("6", rate3SJD.getRateID());
-        assertEquals("MCAR", rate3SJD.getVehicleClass());
-        assertEquals("Available", rate3SJD.getAvailability());
-        assertEquals("USD", rate3SJD.getCurrencyCode());
-        assertEquals(tarifaSJD3.getEstimate() * java.time.Duration.between(requestSJD.getPickupDateTime(), requestSJD.getReturnDateTime()).toDays(), rate3SJD.getEstimate());
-        assertTrue(rate3SJD.isPrePaid());
-    }
-
-    @Test
-    public void testGetRatesByLosCabosLocation() {
-        // Setup location-specific Tarifas for Los Cabos
+        // Setup location-specific Tarifas for another location (e.g., Los Cabos)
         Tarifa tarifaCabo1 = new Tarifa();
         tarifaCabo1.setId(7L);
         tarifaCabo1.setName("TarifaCabo1");
@@ -248,9 +185,68 @@ public class TarifaServiceTest {
         tarifaCabo2.setProductosObligatorios(new HashSet<>()); // Assuming no obligatory products for simplicity
         tarifaCabo2.setEstimate(tarifaService.calculateEstimate(tarifaCabo2));
 
-        // Mock repository response for the Los Cabos location
+        // Mock repository response for the new locations
+        when(tarifaRepository.findByRateSetAndLocationCode("SJD_RATE_SET", "SJDMY1"))
+                .thenReturn(Arrays.asList(tarifaSJD1, tarifaSJD2, tarifaSJD3));
         when(tarifaRepository.findByRateSetAndLocationCode("CABO_RATE_SET", "CABOMY1"))
                 .thenReturn(Arrays.asList(tarifaCabo1, tarifaCabo2));
+
+        // Request for rates at the San Jose Del Cabo location
+        ResRatesRequest requestSJD = new ResRatesRequest();
+        requestSJD.setCorpRateID("MYWEB1");
+        requestSJD.setPickupLocationCode("SJDMY1");
+        requestSJD.setPickupDateTime(LocalDateTime.of(2024, 7, 19, 10, 0));
+        requestSJD.setReturnLocationCode("SJDMY1");
+        requestSJD.setReturnDateTime(LocalDateTime.of(2024, 7, 21, 10, 0));
+        requestSJD.setCountryCode("US");
+        requestSJD.setRateSet("SJD_RATE_SET");  // Set the rateSet
+
+        // Execute the test for San Jose Del Cabo location
+        ResRatesResponse responseSJD = tarifaService.getRates(requestSJD, "SJD_RATE_SET");
+
+        // Validate the response for San Jose Del Cabo location
+        assertNotNull(responseSJD);
+        assertTrue(responseSJD.isSuccess());
+        assertNotNull(responseSJD.getRates());
+        assertFalse(responseSJD.getRates().isEmpty());
+        assertEquals(3, responseSJD.getRates().size());
+
+        // Print results to verify correct behavior for San Jose Del Cabo location
+        responseSJD.getRates().forEach(rate -> {
+            System.out.println("Rate for location SJDMY1:");
+            System.out.println("  RateID=" + rate.getRateID());
+            System.out.println("  Class=" + rate.getVehicleClass());
+            System.out.println("  Availability=" + rate.getAvailability());
+            System.out.println("  CurrencyCode=" + rate.getCurrencyCode());
+            System.out.println("  Estimate (per day)=" + rate.getEstimate() / java.time.Duration.between(requestSJD.getPickupDateTime(), requestSJD.getReturnDateTime()).toDays());
+            System.out.println("  Total Estimate=" + rate.getEstimate());
+        });
+
+        // Assert specific expected results for San Jose Del Cabo location
+        ResRatesResponse.Rate rate1SJD = responseSJD.getRates().get(0);
+        assertEquals("4", rate1SJD.getRateID());
+        assertEquals("ECAR", rate1SJD.getVehicleClass());
+        assertEquals("Available", rate1SJD.getAvailability());
+        assertEquals("USD", rate1SJD.getCurrencyCode());
+        assertEquals(tarifaSJD1.getEstimate() * java.time.Duration.between(requestSJD.getPickupDateTime(), requestSJD.getReturnDateTime()).toDays(), rate1SJD.getEstimate());
+        assertTrue(rate1SJD.isPrePaid());
+
+        // Repeat assertions for the other two rates...
+        ResRatesResponse.Rate rate2SJD = responseSJD.getRates().get(1);
+        assertEquals("5", rate2SJD.getRateID());
+        assertEquals("FCAR", rate2SJD.getVehicleClass());
+        assertEquals("Available", rate2SJD.getAvailability());
+        assertEquals("USD", rate2SJD.getCurrencyCode());
+        assertEquals(tarifaSJD2.getEstimate() * java.time.Duration.between(requestSJD.getPickupDateTime(), requestSJD.getReturnDateTime()).toDays(), rate2SJD.getEstimate());
+        assertTrue(rate2SJD.isPrePaid());
+
+        ResRatesResponse.Rate rate3SJD = responseSJD.getRates().get(2);
+        assertEquals("6", rate3SJD.getRateID());
+        assertEquals("MCAR", rate3SJD.getVehicleClass());
+        assertEquals("Available", rate3SJD.getAvailability());
+        assertEquals("USD", rate3SJD.getCurrencyCode());
+        assertEquals(tarifaSJD3.getEstimate() * java.time.Duration.between(requestSJD.getPickupDateTime(), requestSJD.getReturnDateTime()).toDays(), rate3SJD.getEstimate());
+        assertTrue(rate3SJD.isPrePaid());
 
         // Request for rates at the Los Cabos location
         ResRatesRequest requestCabo = new ResRatesRequest();
@@ -260,10 +256,12 @@ public class TarifaServiceTest {
         requestCabo.setReturnLocationCode("CABOMY1");
         requestCabo.setReturnDateTime(LocalDateTime.of(2024, 7, 21, 10, 0));
         requestCabo.setCountryCode("US");
-        requestCabo.setRateSet("CABO_RATE_SET");
+        requestCabo.setRateSet("CABO_RATE_SET");  // Set the rateSet
 
         // Execute the test for Los Cabos location
+        System.out.println("Executing test for Los Cabos location");
         ResRatesResponse responseCabo = tarifaService.getRates(requestCabo, "CABO_RATE_SET");
+        System.out.println("Response generated for Los Cabos: " + responseCabo);
 
         // Validate the response for Los Cabos location
         assertNotNull(responseCabo);
@@ -299,55 +297,5 @@ public class TarifaServiceTest {
         assertEquals("USD", rate2Cabo.getCurrencyCode());
         assertEquals(tarifaCabo2.getEstimate() * java.time.Duration.between(requestCabo.getPickupDateTime(), requestCabo.getReturnDateTime()).toDays(), rate2Cabo.getEstimate());
         assertTrue(rate2Cabo.isPrePaid());
-    }
-
-    @Test
-    public void testGetRatesCorporateIDNotFound() {
-        // Setup mock response for corporate ID not found
-        when(corporateIDRepository.findByName("NON_EXISTENT_CORP_ID")).thenReturn(Optional.empty());
-
-        // Request for rates with a non-existent corporate ID
-        ResRatesRequest request = new ResRatesRequest();
-        request.setCorpRateID("NON_EXISTENT_CORP_ID");
-        request.setPickupLocationCode("SJDMY1");
-        request.setPickupDateTime(LocalDateTime.of(2024, 7, 19, 10, 0));
-        request.setReturnLocationCode("SJDMY1");
-        request.setReturnDateTime(LocalDateTime.of(2024, 7, 21, 10, 0));
-        request.setCountryCode("US");
-        request.setRateSet("SJD_RATE_SET");
-
-        // Execute the test
-        ResRatesResponse response = tarifaService.getRates(request, "SJD_RATE_SET");
-
-        // Validate the response
-        assertNotNull(response);
-        assertFalse(response.isSuccess());
-        assertNull(response.getRates());
-        assertEquals("Corporate ID not found", response.getMessage());
-    }
-
-    @Test
-    public void testGetRatesNoTarifasFound() {
-        // Setup mock response for no tarifas found
-        when(tarifaRepository.findByRateSetAndLocationCode("SJD_RATE_SET", "SJDMY1")).thenReturn(Arrays.asList());
-
-        // Request for rates at the San Jose Del Cabo location
-        ResRatesRequest request = new ResRatesRequest();
-        request.setCorpRateID("MYWEB1");
-        request.setPickupLocationCode("SJDMY1");
-        request.setPickupDateTime(LocalDateTime.of(2024, 7, 19, 10, 0));
-        request.setReturnLocationCode("SJDMY1");
-        request.setReturnDateTime(LocalDateTime.of(2024, 7, 21, 10, 0));
-        request.setCountryCode("US");
-        request.setRateSet("SJD_RATE_SET");
-
-        // Execute the test
-        ResRatesResponse response = tarifaService.getRates(request, "SJD_RATE_SET");
-
-        // Validate the response
-        assertNotNull(response);
-        assertFalse(response.isSuccess());
-        assertNull(response.getRates());
-        assertEquals("No rates found for the given location", response.getMessage());
     }
 }

@@ -5,15 +5,17 @@ import com.secret.platform.corporateid.CorporateIDRepository;
 import com.secret.platform.dto.ResRatesRequest;
 import com.secret.platform.dto.ResRatesResponse;
 import com.secret.platform.exception.ResourceNotFoundException;
+import com.secret.platform.productos.Productos;
+import com.secret.platform.productos.PaqueteProductosExtras;
 import com.secret.platform.vehicle_class.VehicleClass;
 import com.secret.platform.vehicle_class.VehicleClassRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,6 +39,8 @@ public class TarifaService {
     }
 
     public Tarifa createTarifa(Tarifa tarifa) {
+        // Calculate the Estimate before saving
+        tarifa.setEstimate(calculateEstimate(tarifa));
         return tarifaRepository.save(tarifa);
     }
 
@@ -50,7 +54,6 @@ public class TarifaService {
         tarifa.setVehicleClass(tarifaDetails.getVehicleClass());
         tarifa.setAvailability(tarifaDetails.isAvailability());
         tarifa.setCodigoMoneda(tarifaDetails.getCodigoMoneda());
-        tarifa.setEstimate(tarifaDetails.getEstimate());
         tarifa.setRateOnlyEstimate(tarifaDetails.getRateOnlyEstimate());
         tarifa.setDropCharge(tarifaDetails.getDropCharge());
         tarifa.setDistance(tarifaDetails.getDistance());
@@ -63,6 +66,9 @@ public class TarifaService {
         tarifa.setTerminosAlquiler(tarifaDetails.getTerminosAlquiler());
         tarifa.setUpdatedAt(LocalDateTime.now());
 
+        // Calculate the Estimate
+        tarifa.setEstimate(calculateEstimate(tarifa));
+
         return tarifaRepository.save(tarifa);
     }
 
@@ -72,18 +78,61 @@ public class TarifaService {
         tarifaRepository.delete(tarifa);
     }
 
-    public ResRatesResponse getRates(ResRatesRequest request) {
-        Optional<CorporateID> corporateID = corporateIDRepository.findByName(request.getCorpRateID());
+    public double calculateEstimate(Tarifa tarifa) {
+        double rateOnlyEstimate = tarifa.getRateOnlyEstimate();
+        double discount = tarifa.getDiscount();
+        double iva = tarifa.getIva();
 
-        if (!corporateID.isPresent()) {
-            throw new ResourceNotFoundException("CorporateID not found for the provided name :: " + request.getCorpRateID());
+        // Initialize mandatoryProductCost
+        double mandatoryProductCost = 0.0;
+        if (tarifa.getProductosObligatorios() != null) {
+            mandatoryProductCost = tarifa.getProductosObligatorios().stream()
+                    .mapToDouble(Productos::getCosto)
+                    .sum();
         }
 
-        List<Tarifa> tarifas = tarifaRepository.findByCorporateID(String.valueOf(corporateID.get()));
+        // Initialize paqueteDiscount
+        double paqueteDiscount = 0.0;
+        if (tarifa.getCorporateID() != null && tarifa.getCorporateID().getPaqueteProductosExtras() != null) {
+            paqueteDiscount = tarifa.getCorporateID().getPaqueteProductosExtras().stream()
+                    .mapToDouble(PaqueteProductosExtras::getDiscount)
+                    .sum();
+        }
 
-        long days = ChronoUnit.DAYS.between(request.getPickupDateTime(), request.getReturnDateTime());
+        // Apply discounts
+        double discountedRate = rateOnlyEstimate * (1 - discount / 100) * (1 - paqueteDiscount / 100);
 
+        // Add mandatory product costs
+        double totalEstimate = discountedRate + mandatoryProductCost;
+
+        // Apply IVA
+        return totalEstimate * (1 + iva / 100);
+    }
+
+
+    public ResRatesResponse getRates(ResRatesRequest request, String rateSet) {
+        System.out.println("Request received: " + request);
+
+        // Fetch the corporate ID
+        Optional<CorporateID> corporateIDOpt = corporateIDRepository.findByNombre(request.getCorpRateID());
+        if (!corporateIDOpt.isPresent()) {
+            return new ResRatesResponse(false, "Corporate ID not found");
+        }
+        CorporateID corporateID = corporateIDOpt.get();
+        System.out.println("Corporate ID: " + corporateID);
+
+        // Fetch the tariffs
+        List<Tarifa> tarifas = tarifaRepository.findByRateSetAndLocationCode(rateSet, request.getPickupLocationCode());
+        System.out.println("Fetched tarifas: " + tarifas);
+
+        if (tarifas.isEmpty()) {
+            return new ResRatesResponse(false, "No rates found for the given location");
+        }
+
+        // Process the tariffs
         List<ResRatesResponse.Rate> rates = tarifas.stream().map(tarifa -> {
+            long days = java.time.Duration.between(request.getPickupDateTime(), request.getReturnDateTime()).toDays();
+
             ResRatesResponse.Rate rate = new ResRatesResponse.Rate();
             rate.setRateID(tarifa.getId().toString());
             rate.setVehicleClass(tarifa.getVehicleClass().getClassName());
@@ -98,11 +147,8 @@ public class TarifaService {
             return rate;
         }).collect(Collectors.toList());
 
-        ResRatesResponse response = new ResRatesResponse();
-        response.setSuccess(true);
-        response.setCount(rates.size());
-        response.setRates(rates);
-
+        ResRatesResponse response = new ResRatesResponse(true, rates);
+        System.out.println("Response generated: " + response);
         return response;
     }
 }

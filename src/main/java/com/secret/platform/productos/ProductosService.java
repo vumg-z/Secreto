@@ -3,10 +3,9 @@ package com.secret.platform.productos;
 import com.secret.platform.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class ProductosService {
@@ -18,14 +17,17 @@ public class ProductosService {
         return productosRepository.findAll();
     }
 
-    public Optional<Productos> getProductosById(Long id) {
-        return productosRepository.findById(id);
+    public Productos getProductosById(Long id) {
+        return productosRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Productos not found for this id :: " + id));
     }
 
+    @Transactional
     public Productos createProductos(Productos productos) {
         return productosRepository.save(productos);
     }
 
+    @Transactional
     public Productos updateProductos(Long id, Productos productosDetails) {
         Productos productos = productosRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Productos not found for this id :: " + id));
@@ -41,6 +43,7 @@ public class ProductosService {
         return productosRepository.save(productos);
     }
 
+    @Transactional
     public void deleteProductos(Long id) {
         Productos productos = productosRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Productos not found for this id :: " + id));

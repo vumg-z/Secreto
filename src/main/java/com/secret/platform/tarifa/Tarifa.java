@@ -8,6 +8,7 @@ import com.secret.platform.vehicle_class.VehicleClass;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -28,6 +29,18 @@ public class Tarifa {
     @JoinColumn(name = "vehicle_class_id", nullable = false)
     private VehicleClass vehicleClass;
 
+    public String getRateSet() {
+        return rateSet;
+    }
+
+    public void setRateSet(String rateSet) {
+        this.rateSet = rateSet;
+    }
+
+    private String rateSet;
+    private String locationCode; // Add this field to store the location code
+
+
     private boolean availability;
     private String codigoMoneda;
     private double estimate;
@@ -37,6 +50,51 @@ public class Tarifa {
     private boolean prepaid;
     private double iva;
     private double discount;
+    private double dailyRate;
+    private double weeklyRate;
+    private double monthlyRate;
+    private double extraDayRate;
+
+    public String getLocationCode() {
+        return locationCode;
+    }
+
+    public void setLocationCode(String locationCode) {
+        this.locationCode = locationCode;
+    }
+    public double getDailyRate() {
+        return dailyRate;
+    }
+
+    public void setDailyRate(double dailyRate) {
+        this.dailyRate = dailyRate;
+    }
+
+    public double getWeeklyRate() {
+        return weeklyRate;
+    }
+
+    public void setWeeklyRate(double weeklyRate) {
+        this.weeklyRate = weeklyRate;
+    }
+
+    public double getMonthlyRate() {
+        return monthlyRate;
+    }
+
+    public void setMonthlyRate(double monthlyRate) {
+        this.monthlyRate = monthlyRate;
+    }
+
+    public double getExtraDayRate() {
+        return extraDayRate;
+    }
+
+    public void setExtraDayRate(double extraDayRate) {
+        this.extraDayRate = extraDayRate;
+    }
+
+
 
     @ManyToMany
     @JoinTable(
@@ -44,7 +102,7 @@ public class Tarifa {
             joinColumns = @JoinColumn(name = "tarifa_id"),
             inverseJoinColumns = @JoinColumn(name = "inclusiones_id")
     )
-    private Set<Inclusiones> inclusiones;
+    private Set<Inclusiones> inclusiones = new HashSet<>();
 
     @ManyToMany
     @JoinTable(
@@ -52,7 +110,7 @@ public class Tarifa {
             joinColumns = @JoinColumn(name = "tarifa_id"),
             inverseJoinColumns = @JoinColumn(name = "productos_id")
     )
-    private Set<Productos> productosObligatorios;
+    private Set<Productos> productosObligatorios = new HashSet<>();
 
     @ManyToMany
     @JoinTable(
@@ -60,7 +118,7 @@ public class Tarifa {
             joinColumns = @JoinColumn(name = "tarifa_id"),
             inverseJoinColumns = @JoinColumn(name = "productos_id")
     )
-    private Set<Productos> productosExtras;
+    private Set<Productos> productosExtras = new HashSet<>();
 
     @ManyToOne
     @JoinColumn(name = "terminos_alquiler_id")
@@ -243,4 +301,6 @@ public class Tarifa {
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
+
+
 }

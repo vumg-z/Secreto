@@ -10,7 +10,6 @@ import java.util.Optional;
 
 @Repository
 public interface TarifaRepository extends JpaRepository<Tarifa, Long> {
-    Optional<Tarifa> findByCorporateIDAndVehicleClass(CorporateID corporateID, VehicleClass vehicleClass);
-
-    List<Tarifa> findByCorporateID(String corpRateID);
+    List<Tarifa> findByCorporateID(CorporateID corporateID);
+    List<Tarifa> findByRateSetAndLocationCode(String rateSet, String locationCode);
 }
