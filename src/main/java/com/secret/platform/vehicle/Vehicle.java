@@ -8,7 +8,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
-
 import java.util.Set;
 
 @Entity
@@ -16,7 +15,7 @@ public class Vehicle extends RentalItem {
 
     private String brand;
     private String model;
-    private int year;
+    private Integer year;  // Change to Integer for consistency
     private String color;
     private String vin;  // Vehicle Identification Number
     private int mileage;
@@ -67,7 +66,7 @@ public class Vehicle extends RentalItem {
         return model;
     }
 
-    public int getYear() {
+    public Integer getYear() {
         return year;
     }
 
@@ -130,9 +129,9 @@ public class Vehicle extends RentalItem {
     public static abstract class VehicleBuilder<T extends VehicleBuilder<T>> extends RentalItemBuilder<T> {
         private String brand;
         private String model;
-        private int year;
+        private Integer year;
         private String color;
-        private String vin;  // Vehicle Identification Number
+        private String vin;
         private int mileage;
         private String fuelType;
         private String transmission;
@@ -153,7 +152,7 @@ public class Vehicle extends RentalItem {
             return self();
         }
 
-        public T setYear(int year) {
+        public T setYear(Integer year) {
             this.year = year;
             return self();
         }

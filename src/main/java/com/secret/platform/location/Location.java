@@ -5,15 +5,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Date;
 
 @Entity
+@Table(name = "locations", uniqueConstraints = {
+        @UniqueConstraint(columnNames = "location_number"),
+        @UniqueConstraint(columnNames = "holding_drawer")
+})
 public class Location {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @JsonProperty("name")
-    private String name;
-
+    @JsonProperty("location_number")
+    @Column(name = "location_number", nullable = false, unique = true)
+    private String locationNumber;
     @JsonProperty("location_name")
     private String locationName;
 
@@ -29,15 +32,29 @@ public class Location {
     @JsonProperty("phone")
     private String phone;
 
-    @JsonProperty("profit_center")
-    private String profitCenter;
+    @JsonProperty("profit_center_number")
+    @Column(name = "profit_center_number", nullable = false, length = 3)
+    private String profitCenterNumber;
+
+
 
     @JsonProperty("do_fuel_calc")
+    @Column(name = "do_fuel_calc", nullable = false, length = 1)
     private String doFuelCalc;
+    /* doFuelCalc:
+            Enter 1 alpha character to indicate if the system should do automatic fuel charge calculations when RAs are closed or when vehicles are exchanged at this location.
+    */
 
     @JsonProperty("holding_drawer")
+    @Column(name = "holding_drawer", nullable = false, length = 3, unique = true)
     private String holdingDrawer;
 
+    /* holding drawer:
+        A holding drawer is a fictitious Cash Drawer that can be used for credit card payments when closing one-way rentals between owned locations (see the chapter on CARS+ Special Features for a detailed definition). Enter up to 3 alphanumeric characters to indicate the Holding Drawer number. (This is a required field.)
+        EXAMPLE: Type 202(RET).
+        Note: The holding drawer logic can be deactivated.
+        User tip: Each cash drawer MUST have a unique number. That is, there cannot be a Drawer #1 at location A and another Drawer #1 at location B. Additionally, every renting location must have their own drawer number. (Locations cannot share a drawer.)
+     */
     @JsonProperty("auto_vehicle_select")
     private String autoVehicleSelect;
 
@@ -327,13 +344,13 @@ public class Location {
     public String toString() {
         return "Location{" +
                 "id=" + id +
-                ", name='" + name + '\'' +
+                ", location number='" + locationNumber + '\'' +
                 ", locationName='" + locationName + '\'' +
                 ", addressLine1='" + addressLine1 + '\'' +
                 ", addressLine2='" + addressLine2 + '\'' +
                 ", addressLine3='" + addressLine3 + '\'' +
                 ", phone='" + phone + '\'' +
-                ", profitCenter='" + profitCenter + '\'' +
+                ", profitCenter='" + profitCenterNumber + '\'' +
                 ", doFuelCalc='" + doFuelCalc + '\'' +
                 ", holdingDrawer='" + holdingDrawer + '\'' +
                 ", autoVehicleSelect='" + autoVehicleSelect + '\'' +
@@ -346,6 +363,83 @@ public class Location {
                 '}';
     }
 
-    // Getters and setters
-    // Add getters and setters for all fields
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getLocationNumber() {
+        return locationNumber;
+    }
+
+    public void setLocationNumber(String locationNumber) {
+        this.locationNumber = locationNumber;
+    }
+
+    public String getLocationName() {
+        return locationName;
+    }
+
+    public void setLocationName(String locationName) {
+        this.locationName = locationName;
+    }
+
+    public String getAddressLine1() {
+        return addressLine1;
+    }
+
+    public void setAddressLine1(String addressLine1) {
+        this.addressLine1 = addressLine1;
+    }
+
+    public String getAddressLine2() {
+        return addressLine2;
+    }
+
+    public void setAddressLine2(String addressLine2) {
+        this.addressLine2 = addressLine2;
+    }
+
+    public String getAddressLine3() {
+        return addressLine3;
+    }
+
+    public void setAddressLine3(String addressLine3) {
+        this.addressLine3 = addressLine3;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getProfitCenterNumber() {
+        return profitCenterNumber;
+    }
+
+    public void setProfitCenterNumber(String profitCenterNumber) {
+        this.profitCenterNumber = profitCenterNumber;
+    }
+
+    public void setDoFuelCalc(String doFuelCalc) {
+        this.doFuelCalc = doFuelCalc;
+    }
+
+    public String getHoldingDrawer() {
+        return holdingDrawer;
+    }
+
+    public void setHoldingDrawer(String holdingDrawer) {
+        this.holdingDrawer = holdingDrawer;
+    }
+
+    public String getDoFuelCalc() {
+        return this.doFuelCalc;
+    }
 }

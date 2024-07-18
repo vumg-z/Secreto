@@ -1,20 +1,17 @@
 package com.secret.platform.user;
 
-import com.secret.platform.avatar.Avatar;
 import jakarta.persistence.*;
 
 @Entity
+@Table(name = "\"user\"")  // Quoting the user table name
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
-    @JoinColumn(name = "avatar_id")
-    private Avatar avatar;
+    @Column(name = "avatar_id")
+    private Long avatarId;
 
-
-
-    // ... getters and setters ...
+    // Other fields and methods
 }
