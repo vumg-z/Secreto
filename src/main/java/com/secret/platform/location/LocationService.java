@@ -3,11 +3,14 @@ package com.secret.platform.location;
 import com.secret.platform.config.FeatureFlagServiceInterface;
 import com.secret.platform.general_ledger.GeneralLedger;
 import com.secret.platform.general_ledger.GeneralLedgerRepository;
+import com.secret.platform.group_code.GroupCodes;
+import com.secret.platform.group_code.GroupCodesRepository;
 import com.secret.platform.status_code.StatusCode;
 import com.secret.platform.status_code.StatusCodeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -24,7 +27,10 @@ public class LocationService implements LocationServiceInterface {
 
     @Autowired
     private GeneralLedgerRepository generalLedgerRepository;
-    @Override
+
+    @Autowired
+    private GroupCodesRepository groupCodesRepository;
+
     public Location saveLocation(Location location) {
         validateProfitCenterNumber(location.getProfitCenterNumber());
         validateDoFuelCalc(location.getDoFuelCalc());
@@ -33,6 +39,8 @@ public class LocationService implements LocationServiceInterface {
         validateValidRentalLoc(location.getValidRentalLoc());
         validateInterOfcArAcct(location.getInterOfcArAcct());
 
+        validateAllowMultiLanguageRa(location.getAllowMultiLanguageRa());
+        validateAllowWaitRas(location.getAllowWaitRas());
 
         if (!isLocationNumberUnique(location.getLocationNumber())) {
             throw new IllegalArgumentException("Location number must be unique");
@@ -62,7 +70,14 @@ public class LocationService implements LocationServiceInterface {
             location.setDispatchControl("N");
         }
 
+        // Validate metroplex location
+        validateMetroplexLocation(location.getMetroplexLocation());
+
         return locationRepository.save(location);
+    }
+
+    public List<Location> findLocationsByGroupCode(String groupCode) {
+        return locationRepository.findByMetroplexLocation_GroupCode(groupCode);
     }
     @Override
     public Optional<Location> findLocationByNumber(String locationNumber) {
@@ -129,6 +144,24 @@ public class LocationService implements LocationServiceInterface {
     private void validateValidRentalLoc(String validRentalLoc) {
         if (validRentalLoc == null || !validRentalLoc.matches("[YNyPwWCoOnFR]")) {
             throw new IllegalArgumentException("VALID RENTAL LOC must be one of the valid codes: Y, N, y, P, W, C, O, X, n, F, R");
+        }
+    }
+
+    private void validateMetroplexLocation(GroupCodes metroplexLocation) {
+        if (metroplexLocation == null || !groupCodesRepository.existsById(metroplexLocation.getId())) {
+            throw new IllegalArgumentException("Invalid metroplex group code");
+        }
+    }
+
+    private void validateAllowMultiLanguageRa(String allowMultiLanguageRa) {
+        if (allowMultiLanguageRa == null || !allowMultiLanguageRa.matches("[YNX]")) {
+            throw new IllegalArgumentException("ALLOW MULTI-LANGUAGE RA must be 'Y', 'N', or 'X'");
+        }
+    }
+
+    private void validateAllowWaitRas(String allowWaitRas) {
+        if (allowWaitRas == null || !allowWaitRas.matches("[YN]")) {
+            throw new IllegalArgumentException("ALLOW WAIT RAs must be 'Y' or 'N'");
         }
     }
 }

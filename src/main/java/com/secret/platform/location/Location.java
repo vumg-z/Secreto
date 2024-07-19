@@ -1,6 +1,7 @@
 package com.secret.platform.location;
 
 import com.secret.platform.general_ledger.GeneralLedger;
+import com.secret.platform.group_code.GroupCodes;
 import com.secret.platform.status_code.StatusCode;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -19,7 +20,7 @@ public class Location {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @JsonProperty("location_number")
-    @Column(name = "location_number", nullable = false, unique = true)
+    @Column(name = "location_number", unique = true)
     private String locationNumber;
     @JsonProperty("location_name")
     private String locationName;
@@ -37,20 +38,20 @@ public class Location {
     private String phone;
 
     @JsonProperty("profit_center_number")
-    @Column(name = "profit_center_number", nullable = false, length = 3)
+    @Column(name = "profit_center_number",  length = 3)
     private String profitCenterNumber;
 
 
 
     @JsonProperty("do_fuel_calc")
-    @Column(name = "do_fuel_calc", nullable = false, length = 1)
+    @Column(name = "do_fuel_calc",  length = 1)
     private String doFuelCalc;
     /* doFuelCalc:
             Enter 1 alpha character to indicate if the system should do automatic fuel charge calculations when RAs are closed or when vehicles are exchanged at this location.
     */
 
     @JsonProperty("holding_drawer")
-    @Column(name = "holding_drawer", nullable = false, length = 3, unique = true)
+    @Column(name = "holding_drawer",  length = 3, unique = true)
     private String holdingDrawer;
 
     /* holding drawer:
@@ -70,7 +71,7 @@ public class Location {
         User tip: This feature is usually used in conjunction with the Dispatching features.
          */
     @JsonProperty("auto_vehicle_select")
-    @Column(name = "auto_vehicle_select", nullable = false, length = 1)
+    @Column(name = "auto_vehicle_select",  length = 1)
     private String autoVehicleSelect;
 
 
@@ -81,7 +82,7 @@ public class Location {
         EXAMPLE: Type A(RET).
          */
     @ManyToOne
-    @JoinColumn(name = "check_in_status_id", nullable = false)
+    @JoinColumn(name = "check_in_status_id")
     private StatusCode checkInStatus;
 
     /*
@@ -96,7 +97,7 @@ public class Location {
 
      */
     @JsonProperty("check_out_fuel")
-    @Column(name = "check_out_fuel", nullable = false, length = 1)
+    @Column(name = "check_out_fuel",  length = 1)
     private String checkOutFuel;
 
 
@@ -140,7 +141,7 @@ public class Location {
 
      */
     @JsonProperty("valid_rental_loc")
-    @Column(name = "valid_rental_loc", nullable = false, length = 1)
+    @Column(name = "valid_rental_loc",  length = 1)
     private String validRentalLoc;
 
     /*
@@ -182,7 +183,7 @@ public class Location {
             EXAMPLE: Type 1051(RET).
          */
     @ManyToOne
-    @JoinColumn(name = "inter_ofc_ar_acct_id", nullable = false)
+    @JoinColumn(name = "inter_ofc_ar_acct_id")
     private GeneralLedger interOfcArAcct;
 
     /*
@@ -190,16 +191,68 @@ public class Location {
     This field is related to the Fleet Planning feature of CARS+. Fleet planning maintains a "calendar" for each class of vehicles at each location, keeping track of how many vehicles are at each location and, of those, how many are committed by reservations or open RAs. Users are warned when a class of vehicles is overbooked.
     However, in metropolitan areas, one location could be blacked-out for a certain vehicle class while a second location a few miles away may still have uncommitted vehicles of the same class. To overcome this, locations within the same geographic area can be grouped together into a common pool of vehicles. This grouping is called "metroplex". Locations should be assigned to a metroplex grouping only when vehicles can be conveniently shuttled back and forth.
     Set up:
-    1. A Location Group Code must be established for the metroplex. The location is assigned to a metroplex by entering the appropriate Location Group Code in this field .For metroplex purposes, a Group Code may not have other groups as members. All members of the group must be individual locations. All locations in the metroplex should have the Location Group Code entered in this field on their Location record.
-    2. Activating the Metroplex feature impacts the manner in which several other control files in CARS+ should be configured. The manual chapter Introduction to Fleet Planning describes these issues and should be thoroughly reviewed prior to activating the Metroplex feature. 
+    1 Location Group Code must be established for the metroplex. The location is assigned to a metroplex by entering the appropriate Location Group Code in this field .For metroplex purposes, a Group Code may not have other groups as members. All members of the group must be individual locations. All locations in the metroplex should have the Location Group Code entered in this field on their Location record.
+    2.Activating the Metroplex feature impacts the manner in which several other control files in CARS+ should be configured. The manual chapterIntroduction to Fleet Planning describes these issues and should be thoroughly reviewed prior to activating the Metroplex feature.
     Entering anything in this field other than a valid Location Group Code (or a Group Code to which this location does not belong) will result in the following message display:
     INVALID METROPLEX GROUP - MUST BE A LOCATION GROUP CODE
     If this location belongs to a metroplex, enter the corresponding Location Group Code in this field. Remember, the first character of a Location Group Code is the plus sign (+).
-    EXAMPLE: Type +SNA (RET)
+    EXAMPLE: Type+SNA(RET)
      */
 
-    @JsonProperty("metroplex_location")
-    private String metroplexLocation;
+    @ManyToOne
+    @JoinColumn(name = "metroplex_location_id")
+    private GroupCodes metroplexLocation;
+
+    /*
+    39. ALLOW MULTI-LANGUAGE RA
+    This field controls whether the prompt for printing RAs will ask if the RA should be printed in a language other than English. Enter:
+    Y = Yes, rental agents at this location will be asked in which language the RA should be printed. This option should not be used unless you know your print program supports more than one language.
+    N = No, all RAs printed at this location are printed in a single language.
+    X = Multiple, a single RA can be printed in multiple languages. After being prompted for a language code, the RA will be printed in that language and then the user will be prompted to enter a second Language Code. This will continue until the user indicates that no more printing is required.
+    EXAMPLE: Type N (RET).
+     */
+
+    @JsonProperty("allow_multi_language_ra")
+    @Column(name = "allow_multi_language_ra", length = 1)
+    private String allowMultiLanguageRa;
+
+    /*
+    40. ALLOW WAIT RAs
+    RAs can be saved without a vehicle being assigned. This is often done when a vehicle is not available at the time the customer arrives at the counter. A RA saved under this condition goes into the WAIT Status (waiting for a vehicle assignment). WAIT RAs must be cleared before the end of the day or else problems will occur at time of close. Because of the potential of problems, the ability to create WAIT Status RAs can be turned off.
+    Y = Yes, RAs at this location can be saved without assigning a vehicle.
+    N = No, RAs at this location cannot be saved without a vehicle being assigned.
+    EXAMPLE: Type Y(RET).
+     */
+
+    @JsonProperty("allow_wait_ras")
+    @Column(name = "allow_wait_ras", length = 1)
+    private String allowWaitRas;
+
+    /*
+    41. RATE SET
+    A Rate Set is the "geographical" element of the rental rate look-up logic. Locations that share the same T&M rate products and rate prices can share a common Rate Set code. For a complete discussion on Rate Sets within CARS+, see the chapterOverview - Rate Sets and Rate Groups.
+    Example 1: All locations in Southern California which share the same T&M prices could be assigned Rate Set "SOCAL" in this field.And all locations in Northern California sharing the same rates and rate prices could be assigned Rate Set "NOCAL".
+    Example 2: For an operation that has airport and city locations, the city locations could use the same Rate Set if they offer the same rate products and T&M rates-- as opposed to the airport location which may have different rate products and/or rate prices.
+    Rate Sets for T&M rates can be up to 6 alphanumeric characters.
+    NOTE:If the Upsell Matrix is used, the first 2 characters of the Rate Set have special meaning!Please read the section on Upsell Matrix Rate Set below.
+
+    Rate Groups
+    While it is common for retail rates to differ by location, standard corporate rates and insurance replacement rates are usually negotiated so that they are honored no matter which location generates the rental. Additionally, certain rates for special promotions may apply to all locations. Rather than having to create these types of rates in each Rate Set, they can be set up in a unique Rate Set. The "Rate Group" logic allows many or all locations to use rates from another Rate Set. (Use the program Edit Rate Groups to define which locations can share rates in that Rate Set.)
+    When Rate Groups are established, a hierarchy is followed to determine which Rate Set is used for a particular Rate Code:
+
+    1. CARS+ first attempts to find the rate code's Rate/Rules Record using the opening location's own Rate Set. (The Rate Set defined in this field.)
+    2. If that fails, CARS+ will try to find the rate code's Rate/Rules Record in each Rate Group to which the location belongs. If a location belongs to numerous Rate Groups which all contain the desired Rate Code, the first one encountered is used. Rate Groups are examined based on an alphanumeric sort of the Rate Group. Refer to the chapter Edit Rate Groups for more details and examples of this logic.
+    Upsell Matrix Rate Set
+    Rate Set codes are used to look up not only T&M Rates but also Upsell rates from the Upsell Matrix Table. (Set up inEdit Upsell Rates.)NOTE:Rate sets for the Upsell Matrix are limited to just 2 alphanumeric characters in length.Therefore, only the first two characters entered in this field will be used to look up Upsell rates,while the full six characters (if used) will be used to look up T&M rates.If Rate Set codes are more than 2 characters, this logic must be kept in mind.
+    When an upsell is added to a RA using the U subwindow (Upsell Matrix), CARS+ starts an examination of the Upsell rates using the following hierarchy:
+    1. CARS+ first attempts to find an Upsell Matrix record using the same Rate Set that was used to find the T&M rates on the RA. Only the first 2 characters of the Rate Set are used.
+    2.If that fails, CARS+ will try to find an Upsell Matrix record using the rate set for the opening location (the Rate Set entered in this field), Only the first 2 characters of the Rate Set are used.
+    Enter up to six alphanumeric characters to indicate the default Rate Set forf Rate Products and the Upsell Matrix that are effective at this location.
+    EXAMPLE: TypeSOCAL(RET).
+    USER TIP:With the default Rate Set "SOCAL' in the example above, the value "SOCAL" will be used to look up T&M rates for rentals that open at this location, but the value "SO" will be used to look up upsell charges on the Upsell Matrix.
+     */
+
+
 
     @JsonProperty("rate_set")
     private String rateSet;
@@ -610,11 +663,11 @@ public class Location {
 
 
 
-    public String getMetroplexLocation() {
+    public GroupCodes getMetroplexLocation() {
         return metroplexLocation;
     }
 
-    public void setMetroplexLocation(String metroplexLocation) {
+    public void setMetroplexLocation(GroupCodes metroplexLocation) {
         this.metroplexLocation = metroplexLocation;
     }
 
@@ -632,5 +685,29 @@ public class Location {
 
     public void setInterOfcArAcct(GeneralLedger interOfcArAcct) {
         this.interOfcArAcct = interOfcArAcct;
+    }
+
+    public String getAllowMultiLanguageRa() {
+        return allowMultiLanguageRa;
+    }
+
+    public void setAllowMultiLanguageRa(String allowMultiLanguageRa) {
+        this.allowMultiLanguageRa = allowMultiLanguageRa;
+    }
+
+    public String getAllowWaitRas() {
+        return allowWaitRas;
+    }
+
+    public void setAllowWaitRas(String allowWaitRas) {
+        this.allowWaitRas = allowWaitRas;
+    }
+
+    public String getRateSet() {
+        return rateSet;
+    }
+
+    public void setRateSet(String rateSet) {
+        this.rateSet = rateSet;
     }
 }
