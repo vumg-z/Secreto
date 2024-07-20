@@ -28,12 +28,12 @@ public class RateProductServiceImpl implements RateProductService {
 
     @Override
     public List<RateProduct> getAllRateProducts() {
-        return null;
+        return rateProductRepository.findAll();
     }
 
     @Override
     public Optional<RateProduct> getRateProductById(Long id) {
-        return Optional.empty();
+        return rateProductRepository.findById(id);
     }
 
     @Override
@@ -62,12 +62,55 @@ public class RateProductServiceImpl implements RateProductService {
 
     @Override
     public RateProduct updateRateProduct(Long id, RateProduct rateProductDetails, Map<String, Boolean> coverages) throws IllegalAccessException {
-        return null;
+        RateProduct existingRateProduct = rateProductRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("RateProduct not found for this id :: " + id));
+
+        existingRateProduct.setRateSet(rateProductDetails.getRateSet());
+        existingRateProduct.setProduct(rateProductDetails.getProduct());
+        existingRateProduct.setEffPkupDate(rateProductDetails.getEffPkupDate());
+        existingRateProduct.setEffPkupTime(rateProductDetails.getEffPkupTime());
+        existingRateProduct.setMustPkupBefore(rateProductDetails.getMustPkupBefore());
+        existingRateProduct.setComment(rateProductDetails.getComment());
+        existingRateProduct.setRateType(rateProductDetails.getRateType());
+
+        existingRateProduct.setInclCvg1(rateProductDetails.isInclCvg1());
+        existingRateProduct.setInclCvg2(rateProductDetails.isInclCvg2());
+        existingRateProduct.setInclCvg3(rateProductDetails.isInclCvg3());
+        existingRateProduct.setInclCvg4(rateProductDetails.isInclCvg4());
+
+        existingRateProduct.setUnused(rateProductDetails.getUnused());
+        existingRateProduct.setMilesMeth(rateProductDetails.getMilesMeth());
+        existingRateProduct.setWeek(rateProductDetails.getWeek());
+        existingRateProduct.setExtraWeek(rateProductDetails.getExtraWeek());
+        existingRateProduct.setFreeMilesHour(rateProductDetails.getFreeMilesHour());
+        existingRateProduct.setGraceMinutes(rateProductDetails.getGraceMinutes());
+
+        existingRateProduct.setChargeForGrace(rateProductDetails.isChargeForGrace());
+        existingRateProduct.setDiscountable(rateProductDetails.isDiscountable());
+        existingRateProduct.setEditable(rateProductDetails.isEditable());
+
+        existingRateProduct.setMinDaysForWeek(rateProductDetails.getMinDaysForWeek());
+        existingRateProduct.setPeriodMaxDays(rateProductDetails.getPeriodMaxDays());
+        existingRateProduct.setDaysPerMonth(rateProductDetails.getDaysPerMonth());
+        existingRateProduct.setCommYn(rateProductDetails.getCommYn());
+        existingRateProduct.setCommCat(rateProductDetails.getCommCat());
+        existingRateProduct.setInclOptSet(rateProductDetails.getInclOptSet());
+        existingRateProduct.setCurrency(rateProductDetails.getCurrency());
+        existingRateProduct.setPaidFreeDay(rateProductDetails.getPaidFreeDay());
+
+        // Set audit fields
+        existingRateProduct.setModDate(new Date());
+        existingRateProduct.setModTime(new Date().getTime() / 1000.0f); // todo
+        existingRateProduct.setModEmpl("MOD_USER"); // user
+        existingRateProduct.setEmpl(rateProductDetails.getEmpl());
+
+        RateProduct updatedRateProduct = rateProductRepository.save(existingRateProduct);
+        return updatedRateProduct;
     }
 
     @Override
     public void deleteRateProduct(Long id) {
-
+        rateProductRepository.deleteById(id);
     }
 
     private void updateIncludedOptions(RateProduct rateProduct, Map<String, Boolean> coverages, Set<Options> includedOptionsSet) {
@@ -85,3 +128,4 @@ public class RateProductServiceImpl implements RateProductService {
         logger.debug("Final included options for RateProduct after coverages: {}", includedOptionsSet);
     }
 }
+

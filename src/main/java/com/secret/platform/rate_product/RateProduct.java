@@ -407,4 +407,33 @@ public class RateProduct {
     private Date date;
 
     private Float time;
+
+    public Boolean isInclCvg1() {
+        return inclCvg1;
+    }
+
+    public Boolean isInclCvg2() {
+        return inclCvg2;
+    }
+
+    public Boolean isInclCvg3() {
+        return inclCvg3;
+    }
+
+    public Boolean isInclCvg4() {
+        return inclCvg4;
+    }
+
+    public Boolean isChargeForGrace() {
+        return chargeForGrace;
+    }
+
+    public Boolean isDiscountable() {
+        return discountable;
+    }
+
+    public Boolean isEditable() {
+        return editable;
+    }
+
 }
