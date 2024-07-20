@@ -8,6 +8,6 @@ public interface RateProductService {
     List<RateProduct> getAllRateProducts();
     Optional<RateProduct> getRateProductById(Long id);
     RateProduct createRateProduct(RateProduct rateProduct, Map<String, Boolean> coverages);
-    RateProduct updateRateProduct(Long id, RateProduct rateProductDetails, Map<String, Boolean> coverages);
+    RateProduct updateRateProduct(Long id, RateProduct rateProductDetails, Map<String, Boolean> coverages) throws IllegalAccessException;
     void deleteRateProduct(Long id);
 }

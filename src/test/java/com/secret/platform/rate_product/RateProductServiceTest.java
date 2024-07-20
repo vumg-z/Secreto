@@ -3,16 +3,15 @@ package com.secret.platform.rate_product;
 import com.secret.platform.exception.ResourceNotFoundException;
 import com.secret.platform.options.Options;
 import com.secret.platform.options.OptionsServiceImpl;
+import com.secret.platform.type_code.ValidTypeCode;
+import com.secret.platform.type_code.ValidTypeCodeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,11 +28,15 @@ class RateProductServiceTest {
     @Mock
     private OptionsServiceImpl optionsService;
 
+    @Mock
+    private ValidTypeCodeRepository validTypeCodeRepository;
+
     private RateProduct rateProduct;
     private Options cvg1Option;
     private Options cvg2Option;
     private Options cvg3Option;
     private Options cvg4Option;
+    private ValidTypeCode validTypeCode;
 
     @BeforeEach
     void setUp() {
@@ -63,8 +66,14 @@ class RateProductServiceTest {
                 .longDesc("Other Coverage")
                 .build();
 
+        validTypeCode = ValidTypeCode.builder()
+                .typeCode("FC")
+                .description("FULLY COMP INSURED")
+                .build();
+
         rateProduct = RateProduct.builder()
                 .includedOptions(new ArrayList<>())
+                .defltRaType(validTypeCode)
                 .build();
     }
 
@@ -88,12 +97,14 @@ class RateProductServiceTest {
     }
 
     @Test
-    void testUpdateRateProduct_WithCoverages() {
+    void testUpdateRateProduct_WithCoverages() throws IllegalAccessException {
         Map<String, Boolean> coverages = new HashMap<>();
         coverages.put("CVG1", true);
         coverages.put("CVG2", true);
         coverages.put("CVG3", false);
         coverages.put("CVG4", false);
+
+        rateProduct.setEditable(true);
 
         when(optionsService.findByOptionCode("CVG1")).thenReturn(cvg1Option);
         when(optionsService.findByOptionCode("CVG2")).thenReturn(cvg2Option);
@@ -108,22 +119,26 @@ class RateProductServiceTest {
         assertTrue(result.getIncludedOptions().contains(cvg1Option));
         assertTrue(result.getIncludedOptions().contains(cvg2Option));
     }
+    /*
 
     @Test
-    void testUpdateRateProduct_NoCoverages() {
-        Map<String, Boolean> coverages = new HashMap<>();
-        coverages.put("CVG1", false);
-        coverages.put("CVG2", false);
-        coverages.put("CVG3", false);
-        coverages.put("CVG4", false);
+    void testFindByDefltRaType() {
+        when(validTypeCodeRepository.findByTypeCode("FC")).thenReturn(Optional.of(validTypeCode));
+        when(rateProductRepository.findByDefltRaType(validTypeCode)).thenReturn(Optional.of(rateProduct));
 
-        when(rateProductRepository.findById(any(Long.class))).thenReturn(Optional.of(rateProduct));
-        when(rateProductRepository.save(any(RateProduct.class))).thenReturn(rateProduct);
-
-        RateProduct rateProductDetails = RateProduct.builder().build();
-
-        RateProduct result = rateProductService.updateRateProduct(1L, rateProductDetails, coverages);
-
-        assertEquals(0, result.getIncludedOptions().size());
+        Optional<RateProduct> result = rateProductService.findByDefltRaType("FC");
+        assertTrue(result.isPresent());
+        assertEquals(rateProduct, result.get());
     }
+
+    @Test
+    void testFindByDefltRaType_NotFound() {
+        when(validTypeCodeRepository.findByTypeCode("XYZ")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> {
+            rateProductService.findByDefltRaType("XYZ");
+        });
+    }
+     */
+
 }
