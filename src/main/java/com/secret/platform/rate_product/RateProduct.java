@@ -1,8 +1,12 @@
 package com.secret.platform.rate_product;
 
+import com.secret.platform.options.Options;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name = "reservas_rental_rules")
@@ -27,6 +31,46 @@ public class RateProduct {
     private String comment;
     private String rateType;
 
+
+
+    /*
+        INCLUDE CVG1 & CVG2, INCLUDE CVG3 & CVG4
+    These Yes/No fields indicate if specific coverages are included at no charge with a rate product:
+
+    CVG1 (LDW): Y means LDW is included for free.
+    CVG2 - CVG4: Reserved for additional coverages (e.g., PAI). Y means these are included for free.
+
+    Key Points
+    Included Coverages:
+
+    Y: Coverage is included at no charge, blocking rental agents from selling it separately.
+    N: Coverage is not included in the Time charges.
+
+    Revenue Handling:
+
+    Only CVG1 (LDW) can have a percentage of the rate allocated in the Accounting DBR.
+    CVG2-CVG4 do not extract revenue from Time charges but are estimated in the Net Time and Mileage Report.
+    Considerations:
+
+    Minimum/maximum days rules may not automatically update included coverages.
+    Not used for net rates; use Option Sets for net rates.
+
+     */
+
+    @ManyToMany
+    @JoinTable(
+            name = "rate_product_options",
+            joinColumns = @JoinColumn(name = "rate_product_id"),
+            inverseJoinColumns = @JoinColumn(name = "option_id")
+    )
+    private List<Options> includedOptions = new ArrayList<>();
+
+
+    private Boolean inclCvg1;
+    private Boolean inclCvg2;
+    private Boolean inclCvg3;
+    private Boolean inclCvg4;
+
     // Page 1 fields
     private Float unused;
     private Float milesMeth;
@@ -37,10 +81,9 @@ public class RateProduct {
     private Boolean chargeForGrace;
     private Boolean discountable;
     private Boolean editable;
-    private Boolean inclCvg1;
-    private Boolean inclCvg2;
-    private Boolean inclCvg3;
-    private Boolean inclCvg4;
+
+
+
     private Integer minDaysForWeek;
     private Integer periodMaxDays;
     private Integer daysPerMonth;

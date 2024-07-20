@@ -1,5 +1,7 @@
 package com.secret.platform.class_code;
 
+import com.secret.platform.location.Location;
+import com.secret.platform.location.LocationRepository;
 import com.secret.platform.pricing_code.PricingCode;
 import com.secret.platform.pricing_code.PricingCodeRepository;
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,9 @@ public class ClassCodeTests {
     @Autowired
     private PricingCodeRepository pricingCodeRepository;
 
+    @Autowired
+    private LocationRepository locationRepository;
+
     @Test
     public void testCreateAndFindClassCode() {
         // Create a PricingCode
@@ -43,9 +48,16 @@ public class ClassCodeTests {
         entityManager.persist(pricingCode);
         entityManager.flush();
 
+        // Create a Location
+        Location location = new Location();
+        location.setLocationNumber("NYC");
+        location.setLocationName("New York City");
+        entityManager.persist(location);
+        entityManager.flush();
+
         // Create a ClassCode
         ClassCode classCode = ClassCode.builder()
-                .location("NYC")
+                .location(location)
                 .classCode("ECAR")
                 .description("Economy Car")
                 .pricingCode(pricingCode)
@@ -82,5 +94,6 @@ public class ClassCodeTests {
         Optional<ClassCode> foundClassCode = classCodeRepository.findById(classCode.getId());
         assertThat(foundClassCode).isPresent();
         assertThat(foundClassCode.get().getPricingCode()).isEqualTo(pricingCode);
+        assertThat(foundClassCode.get().getLocation()).isEqualTo(location);
     }
 }

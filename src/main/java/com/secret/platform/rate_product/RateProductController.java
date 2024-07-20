@@ -29,17 +29,22 @@ public class RateProductController {
 
     @PostMapping
     public RateProduct createRateProduct(@RequestBody RateProduct rateProduct) {
-        return rateProductService.createRateProduct(rateProduct);
+        //return rateProductService.createRateProduct(rateProduct);
+        return null;
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<RateProduct> updateRateProduct(@PathVariable Long id, @RequestBody RateProduct rateProductDetails) {
+        /*
+
         RateProduct updatedRateProduct = rateProductService.updateRateProduct(id, rateProductDetails);
         if (updatedRateProduct != null) {
             return ResponseEntity.ok(updatedRateProduct);
         } else {
             return ResponseEntity.notFound().build();
         }
+                 */
+    return null;
     }
 
     @DeleteMapping("/{id}")

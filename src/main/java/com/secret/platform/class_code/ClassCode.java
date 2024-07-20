@@ -1,5 +1,6 @@
 package com.secret.platform.class_code;
 
+import com.secret.platform.location.Location;
 import com.secret.platform.pricing_code.PricingCode;
 import jakarta.persistence.*;
 import lombok.*;
@@ -16,7 +17,10 @@ public class ClassCode {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String location;
+    @ManyToOne
+    @JoinColumn(name = "location_id", nullable = false)
+    private Location location;
+
     private String classCode;
     private String description;
 

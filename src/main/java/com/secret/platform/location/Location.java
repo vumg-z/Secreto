@@ -5,6 +5,7 @@ import com.secret.platform.group_code.GroupCodes;
 import com.secret.platform.status_code.StatusCode;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Builder;
 import org.hibernate.cache.spi.Region;
 
 import java.util.Date;
