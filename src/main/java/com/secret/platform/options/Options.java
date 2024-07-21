@@ -302,6 +302,14 @@ public class Options {
     @Column(name = "opt_set_code")
     private String optSetCode;
 
+    @Override
+    public String toString() {
+        return "Options{" +
+                "id=" + id +
+                ", optionCode='" + optionCode + '\'' +
+                '}';
+    }
+
 
 
 }

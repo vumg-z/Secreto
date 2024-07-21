@@ -7,7 +7,11 @@ import com.secret.platform.productos.PaqueteProductosExtras;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Set;
-
+/**
+ * @deprecated This class is deprecated and will be removed in future versions.
+ *             Please use {@link com.secret.platform.corporate_account}
+ */
+@Deprecated
 @Entity
 public class CorporateID {
 
