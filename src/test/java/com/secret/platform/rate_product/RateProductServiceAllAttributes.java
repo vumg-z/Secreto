@@ -82,7 +82,7 @@ class RateProductServiceAllAttributesTest {
                 .build();
 
         rateProduct = RateProduct.builder()
-                .rateSet("Standard Rate Set")
+                //.rateSet("Standard Rate Set")
                 .product("Standard Product")
                 .effPkupDate(new Date())
                 .effPkupTime("12:00")

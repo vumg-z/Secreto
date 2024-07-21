@@ -1,5 +1,6 @@
 package com.secret.platform.rate_product;
 
+import com.secret.platform.class_code.ClassCodeRepository;
 import com.secret.platform.option_set.OptionSet;
 import com.secret.platform.option_set.OptionSetRepository;
 import com.secret.platform.options.OptionsServiceImpl;
@@ -33,6 +34,8 @@ class RateProductAuditFieldsTest {
 
     @Mock
     private OptionSetRepository optionSetRepository;
+    @Mock
+    private ClassCodeRepository classCodeRepository;
 
     private RateProduct existingRateProduct;
     private RateProduct rateProductDetails;
@@ -43,7 +46,7 @@ class RateProductAuditFieldsTest {
 
         existingRateProduct = RateProduct.builder()
                 .id(1L)
-                .rateSet("Old Rate Set")
+                //.rateSet("Old Rate Set")
                 .product("Old Product")
                 .effPkupDate(new Date())
                 .effPkupTime("10:00")
@@ -78,7 +81,7 @@ class RateProductAuditFieldsTest {
                 .build();
 
         rateProductDetails = RateProduct.builder()
-                .rateSet("New Rate Set")
+                //.rateSet("New Rate Set")
                 .product("New Product")
                 .effPkupDate(new Date())
                 .effPkupTime("12:00")

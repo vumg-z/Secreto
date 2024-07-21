@@ -147,7 +147,7 @@ public class LocationBuilder {
         location.setValidRentalLoc(validRentalLoc);
         location.setAllowMultiLanguageRa(allowMultiLanguageRa);
         location.setAllowWaitRas(allowWaitRas);
-        location.setRateSet(rateSet);
+        //location.setRateSet(rateSet);
         return location;
     }
 }

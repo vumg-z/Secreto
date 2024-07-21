@@ -1,7 +1,9 @@
 package com.secret.platform.rate_product;
 
+import com.secret.platform.class_code.ClassCode;
 import com.secret.platform.option_set.OptionSet;
 import com.secret.platform.options.Options;
+import com.secret.platform.rate_set.RateSet;
 import com.secret.platform.type_code.ValidTypeCode;
 import jakarta.persistence.*;
 import lombok.*;
@@ -22,7 +24,10 @@ public class RateProduct {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String rateSet;
+    @ManyToOne
+    @JoinColumn(name = "rate_set_id")
+    private RateSet rateSet;
+
     private String product;
 
     @Temporal(TemporalType.DATE)
@@ -239,6 +244,28 @@ public class RateProduct {
 
     private OptionSet addonOptSet;
 
+    /*
+     * Class Codes associated with this Rate Product.
+     *
+     * This field defines the vehicle classes that this Rate Product applies to.
+     * It establishes a many-to-many relationship between RateProduct and ClassCode entities.
+     *
+     * When a RateProduct is created or updated, the associated ClassCodes should be defined.
+     * If you answer "Y" to the prompt "LOAD ALL CLASSES INTO PAGE 4?", all Vehicle Class Codes
+     * defined for your terminal's default location will be loaded into this list.
+     *
+     * This association ensures that the RateProduct is applicable to the appropriate vehicle
+     * classes as per the business requirements.
+    */
+
+    @ManyToMany
+    @JoinTable(
+            name = "rate_product_class_codes",
+            joinColumns = @JoinColumn(name = "rate_product_id"),
+            inverseJoinColumns = @JoinColumn(name = "class_code_id")
+    )
+    private List<ClassCode> classCodes = new ArrayList<>();
+
 
     private Boolean fpoIncMan;
     private Float oneWayMiles;
@@ -327,15 +354,56 @@ public class RateProduct {
      */
     private String paidFreeDay;
 
+    /*
+
+
+    EARLIEST PICKUP
+
+    Enter the first day of the week a weekend rental can begin (MON, TUE, WED, THU, FRI, SAT, SUN).
+    Example: THU
+    TIME
+
+    Enter the time of day that weekend rates become available.
+    Example: 12N
+    LATEST PICKUP
+
+    Enter the last day of the week a weekend rental can begin (MON, TUE, WED, THU, FRI, SAT, SUN).
+    Example: SAT
+    TIME
+
+    Enter the time of day that weekend rates are no longer available.
+    Example: 6P
+    EARLIEST RETURN
+
+    Enter the first day a vehicle can be returned to qualify for the weekend rate (cannot be the same as the earliest pickup day, must be at least one day after).
+    Example: SUN
+    TIME
+
+    Enter the earliest time a vehicle can be returned to qualify for the weekend rate.
+    Example: 12N
+    LATEST RETURN
+
+    Enter the last day a vehicle can be returned to qualify for the weekend rate (MON, TUE, WED, THU, FRI, SAT, SUN).
+    Example: MON
+    TIME
+
+    Enter the latest time a vehicle can be returned to qualify for the weekend rate.
+    Example: 12N
+     */
+
     // Page 2 fields
     private String earliestPkupDay;
     private String earliestPkupTime;
+
     private String latestPkupDay;
     private String latestPkupTime;
+
     private String earliestReturnDay;
     private String earliestReturnTime;
+
     private String latestReturnDay;
     private String latestReturnTime;
+
     private Boolean problemReturnChg;
     private String endMethod;
     private Boolean earlyLateElbo;
@@ -377,7 +445,8 @@ public class RateProduct {
     private Float dayRate;
     private Float weekRate;
     private Float monthRate;
-    private Float xdayRate;
+    private Float xDayRate;
+
     private Float hourRate;
     private Float mileRate;
     private Float intercityRate;
@@ -436,4 +505,7 @@ public class RateProduct {
         return editable;
     }
 
+    public double getXDayRate() {
+        return this.xDayRate;
+    }
 }

@@ -1,6 +1,10 @@
 package com.secret.platform.rate_product;
 
+import com.secret.platform.class_code.ClassCode;
+import com.secret.platform.class_code.ClassCodeRepository;
 import com.secret.platform.exception.ResourceNotFoundException;
+import com.secret.platform.location.Location;
+import com.secret.platform.option_set.OptionSet;
 import com.secret.platform.options.Options;
 import com.secret.platform.options.OptionsServiceImpl;
 import com.secret.platform.type_code.ValidTypeCode;
@@ -15,6 +19,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 class RateProductServiceTest {
@@ -31,16 +36,42 @@ class RateProductServiceTest {
     @Mock
     private ValidTypeCodeRepository validTypeCodeRepository;
 
+    @Mock
+    private ClassCodeRepository classCodeRepository;
+
     private RateProduct rateProduct;
     private Options cvg1Option;
     private Options cvg2Option;
     private Options cvg3Option;
     private Options cvg4Option;
     private ValidTypeCode validTypeCode;
+    private Location defaultLocation;
+    private List<ClassCode> classCodes;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+
+        defaultLocation = Location.builder()
+                .id(1L)
+                .locationNumber("DEFAULT")
+                .build();
+
+        ClassCode classCode1 = ClassCode.builder()
+                .id(1L)
+                .location(defaultLocation)
+                .classCode("SUV")
+                .description("Sport Utility Vehicle")
+                .build();
+
+        ClassCode classCode2 = ClassCode.builder()
+                .id(2L)
+                .location(defaultLocation)
+                .classCode("SEDAN")
+                .description("Sedan")
+                .build();
+
+        classCodes = Arrays.asList(classCode1, classCode2);
 
         cvg1Option = Options.builder()
                 .optionCode("CVG1")
@@ -74,6 +105,7 @@ class RateProductServiceTest {
         rateProduct = RateProduct.builder()
                 .includedOptions(new ArrayList<>())
                 .defltRaType(validTypeCode)
+                .classCodes(classCodes)
                 .build();
     }
 
@@ -110,6 +142,7 @@ class RateProductServiceTest {
         when(optionsService.findByOptionCode("CVG2")).thenReturn(cvg2Option);
         when(rateProductRepository.findById(any(Long.class))).thenReturn(Optional.of(rateProduct));
         when(rateProductRepository.save(any(RateProduct.class))).thenReturn(rateProduct);
+        when(classCodeRepository.findAllByLocation(argThat(location -> "DEFAULT".equals(location.getLocationNumber())))).thenReturn(classCodes);
 
         RateProduct rateProductDetails = RateProduct.builder().build();
 
@@ -118,27 +151,13 @@ class RateProductServiceTest {
         assertEquals(2, result.getIncludedOptions().size());
         assertTrue(result.getIncludedOptions().contains(cvg1Option));
         assertTrue(result.getIncludedOptions().contains(cvg2Option));
+        assertNotNull(result.getClassCodes());
+        assertEquals(2, result.getClassCodes().size());
+        assertEquals("SUV", result.getClassCodes().get(0).getClassCode());
+        assertEquals("SEDAN", result.getClassCodes().get(1).getClassCode());
+
+        verify(rateProductRepository, times(1)).findById(1L);
+        verify(rateProductRepository, times(1)).save(any(RateProduct.class));
+        verify(classCodeRepository, times(1)).findAllByLocation(argThat(location -> "DEFAULT".equals(location.getLocationNumber())));
     }
-    /*
-
-    @Test
-    void testFindByDefltRaType() {
-        when(validTypeCodeRepository.findByTypeCode("FC")).thenReturn(Optional.of(validTypeCode));
-        when(rateProductRepository.findByDefltRaType(validTypeCode)).thenReturn(Optional.of(rateProduct));
-
-        Optional<RateProduct> result = rateProductService.findByDefltRaType("FC");
-        assertTrue(result.isPresent());
-        assertEquals(rateProduct, result.get());
-    }
-
-    @Test
-    void testFindByDefltRaType_NotFound() {
-        when(validTypeCodeRepository.findByTypeCode("XYZ")).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class, () -> {
-            rateProductService.findByDefltRaType("XYZ");
-        });
-    }
-     */
-
 }

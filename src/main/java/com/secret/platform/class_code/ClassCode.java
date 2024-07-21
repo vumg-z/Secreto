@@ -2,6 +2,7 @@ package com.secret.platform.class_code;
 
 import com.secret.platform.location.Location;
 import com.secret.platform.pricing_code.PricingCode;
+import com.secret.platform.rate_product.RateProduct;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,6 +28,20 @@ public class ClassCode {
     @ManyToOne
     @JoinColumn(name = "pricing_code_id", nullable = false)
     private PricingCode pricingCode;
+
+    @ManyToOne
+    @JoinColumn(name = "rate_product_id", nullable = false)
+    private RateProduct rateProduct;
+
+    private double dayRate;
+    private double weekRate;
+    private double monthRate;
+    private double xDayRate;
+    private double hourRate;
+    private double mileRate;
+    private double itCtyRate;
+    private double prcRate;
+    private double disRate;
 
     private Integer minimumAge;
     private String underAgeSrchg;

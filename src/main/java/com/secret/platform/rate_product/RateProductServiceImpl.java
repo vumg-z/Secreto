@@ -1,10 +1,15 @@
 package com.secret.platform.rate_product;
 
+import com.secret.platform.class_code.ClassCode;
+import com.secret.platform.class_code.ClassCodeRepository;
 import com.secret.platform.exception.ResourceNotFoundException;
+import com.secret.platform.location.Location;
 import com.secret.platform.option_set.OptionSet;
 import com.secret.platform.option_set.OptionSetRepository;
 import com.secret.platform.options.Options;
 import com.secret.platform.options.OptionsServiceImpl;
+import com.secret.platform.rate_set.RateSet;
+import com.secret.platform.rate_set.RateSetRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +30,12 @@ public class RateProductServiceImpl implements RateProductService {
 
     @Autowired
     private OptionSetRepository optionSetRepository;
+
+    @Autowired
+    private ClassCodeRepository classCodeRepository;
+
+    @Autowired
+    private RateSetRepository rateSetRepository;
 
     @Override
     public List<RateProduct> getAllRateProducts() {
@@ -65,6 +76,7 @@ public class RateProductServiceImpl implements RateProductService {
         RateProduct existingRateProduct = rateProductRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("RateProduct not found for this id :: " + id));
 
+        // Set all fields from rateProductDetails to existingRateProduct
         existingRateProduct.setRateSet(rateProductDetails.getRateSet());
         existingRateProduct.setProduct(rateProductDetails.getProduct());
         existingRateProduct.setEffPkupDate(rateProductDetails.getEffPkupDate());
@@ -100,10 +112,29 @@ public class RateProductServiceImpl implements RateProductService {
 
         // Set audit fields
         existingRateProduct.setModDate(new Date());
-        existingRateProduct.setModTime(new Date().getTime() / 1000.0f); // todo
-        existingRateProduct.setModEmpl("MOD_USER"); // user
+        existingRateProduct.setModTime(new Date().getTime() / 1000.0f);
+        existingRateProduct.setModEmpl("MOD_USER");
         existingRateProduct.setEmpl(rateProductDetails.getEmpl());
 
+        // Update included options based on coverages
+        Set<Options> includedOptionsSet = new HashSet<>();
+        for (Map.Entry<String, Boolean> entry : coverages.entrySet()) {
+            if (entry.getValue() != null && entry.getValue()) {
+                Options option = optionsService.findByOptionCode(entry.getKey());
+                if (option != null) {
+                    includedOptionsSet.add(option);
+                }
+            }
+        }
+        existingRateProduct.setIncludedOptions(new ArrayList<>(includedOptionsSet));
+
+        // Load all class codes for the default location
+        Location defaultLocation = new Location();
+        defaultLocation.setLocationNumber("DEFAULT");
+        List<ClassCode> classCodes = classCodeRepository.findAllByLocation(defaultLocation);
+        existingRateProduct.setClassCodes(classCodes);
+
+        // Save the updated rate product
         RateProduct updatedRateProduct = rateProductRepository.save(existingRateProduct);
         return updatedRateProduct;
     }
@@ -127,5 +158,26 @@ public class RateProductServiceImpl implements RateProductService {
         }
         logger.debug("Final included options for RateProduct after coverages: {}", includedOptionsSet);
     }
+
+
+
+
+    public List<ClassCode> getAllClassesWithRatesByLocation(Location location) {
+        List<ClassCode> classCodes = classCodeRepository.findAllByLocation(location);
+        for (ClassCode classCode : classCodes) {
+            List<RateProduct> rateProducts = rateProductRepository.findAllByRateSet(location.getRateSet());
+            for (RateProduct rateProduct : rateProducts) {
+                if (classCode.getRateProduct().equals(rateProduct)) {
+                    classCode.setDayRate(rateProduct.getDayRate());
+                    classCode.setWeekRate(rateProduct.getWeekRate());
+                    classCode.setMonthRate(rateProduct.getMonthRate());
+                    classCode.setXDayRate(rateProduct.getXDayRate());
+                    classCode.setHourRate(rateProduct.getHourRate());
+                }
+            }
+        }
+        return classCodes;
+    }
+
 }
 
