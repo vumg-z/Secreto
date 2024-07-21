@@ -16,4 +16,6 @@ public interface RateProductRepository extends JpaRepository<RateProduct, Long> 
 
     List<RateProduct> findAllByRateSet(RateSet rateSet);
 
+    RateProduct findByCorpRateID();
+
 }
