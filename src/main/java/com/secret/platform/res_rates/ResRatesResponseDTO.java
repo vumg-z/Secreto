@@ -44,6 +44,8 @@ public class ResRatesResponseDTO {
         this.rates.add(rate);
     }
 
+
+
     @XmlAccessorType(XmlAccessType.FIELD)
     public static class Rate {
         @XmlElement(name = "RateID")

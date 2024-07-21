@@ -1,6 +1,7 @@
 package com.secret.platform.res_rates;
 
 import javax.xml.bind.annotation.*;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.time.LocalDateTime;
 
 @XmlRootElement(name = "ResRates")
@@ -70,6 +71,7 @@ public class ResRatesDTO {
         private String locationCode;
 
         @XmlAttribute(name = "dateTime")
+        @XmlJavaTypeAdapter(LocalDateTimeAdapter.class)
         private LocalDateTime dateTime;
 
         // Getters and setters
@@ -97,6 +99,7 @@ public class ResRatesDTO {
         private String locationCode;
 
         @XmlAttribute(name = "dateTime")
+        @XmlJavaTypeAdapter(LocalDateTimeAdapter.class)
         private LocalDateTime dateTime;
 
         // Getters and setters
