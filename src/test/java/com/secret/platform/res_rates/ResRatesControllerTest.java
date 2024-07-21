@@ -1,19 +1,20 @@
 package com.secret.platform.res_rates;
 
-import com.secret.platform.res_rates.ResRatesController;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.MockitoAnnotations;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
 import java.io.StringWriter;
 import java.time.LocalDateTime;
 
@@ -25,6 +26,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(ResRatesController.class)
 public class ResRatesControllerTest {
+
+    private static final Logger logger = LoggerFactory.getLogger(ResRatesControllerTest.class);
 
     @Autowired
     private MockMvc mockMvc;
@@ -42,6 +45,9 @@ public class ResRatesControllerTest {
 
     @Test
     public void testGetRates() throws Exception {
+
+        logger.info("Starting testGetRates");
+
         // Prepare the request XML
         ResRatesDTO resRatesDTO = new ResRatesDTO();
         resRatesDTO.setCorpRateID("MYWEB1");
@@ -59,11 +65,14 @@ public class ResRatesControllerTest {
         resRatesDTO.setCountryCode("US");
         resRatesDTO.setEstimateType(3);
 
-        StringWriter sw = new StringWriter();
+        StringWriter requestWriter = new StringWriter();
         JAXBContext jaxbContext = JAXBContext.newInstance(ResRatesDTO.class);
         Marshaller marshaller = jaxbContext.createMarshaller();
-        marshaller.marshal(resRatesDTO, sw);
-        String requestXml = sw.toString();
+        marshaller.marshal(resRatesDTO, requestWriter);
+        String requestXml = requestWriter.toString();
+
+        // Log the request XML
+        logger.info("Request XML: \n{}", requestXml);
 
         // Prepare the response
         ResRatesResponseDTO responseDTO = new ResRatesResponseDTO();
@@ -89,13 +98,17 @@ public class ResRatesControllerTest {
 
         when(resRatesService.getRates(any(ResRatesDTO.class))).thenReturn(responseDTO);
 
+        // Log the response DTO
+        String responseXml = marshalResponse(responseDTO);
+        logger.info("Response XML: \n{}", responseXml);
+
         // Perform the test
         mockMvc.perform(post("/api/res-rates")
                         .contentType(MediaType.APPLICATION_XML)
                         .content(requestXml)
                         .accept(MediaType.APPLICATION_XML))
                 .andExpect(status().isOk())
-                .andExpect(content().xml(marshalResponse(responseDTO)));
+                .andExpect(content().xml(responseXml));
     }
 
     private String marshalResponse(ResRatesResponseDTO responseDTO) throws JAXBException {

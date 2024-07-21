@@ -6,6 +6,7 @@ import com.secret.platform.privilege_code.PrivilegeCode;
 import com.secret.platform.option_set.OptionSet;
 import com.secret.platform.options.Options;
 import com.secret.platform.rate_product.RateProduct;
+import com.secret.platform.res_rates.ResRatesControllerTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -24,7 +25,7 @@ import static org.mockito.Mockito.*;
 
 public class CorporateAccountTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(CorporateAccountTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(ResRatesControllerTest.class);
 
     @Mock
     private CorporateAccountRepository corporateAccountRepository;
