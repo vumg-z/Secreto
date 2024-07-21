@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-
+@Deprecated
 @Service
 public class CorporateIDService {
 
@@ -39,7 +39,7 @@ public class CorporateIDService {
         corporateID.setDiscount(corporateIDDetails.getDiscount());
         corporateID.setInclusiones(corporateIDDetails.getInclusiones());
         corporateID.setTerminosAlquiler(corporateIDDetails.getTerminosAlquiler());
-        corporateID.setProductos(corporateIDDetails.getProductos());
+        //corporateID.setProductos(corporateIDDetails.getProductos());
         corporateID.setPaqueteProductosExtras(corporateIDDetails.getPaqueteProductosExtras());
         corporateID.setUpdatedAt(LocalDateTime.now());
 

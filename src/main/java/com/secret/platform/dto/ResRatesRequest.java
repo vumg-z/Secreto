@@ -11,7 +11,17 @@ public class ResRatesRequest {
     private String countryCode;
     private String corpRateID;
 
+    private String rateSet;  // Add this field
+
     // Getters and Setters
+
+    public String getRateSet() {
+        return rateSet;
+    }
+
+    public void setRateSet(String rateSet) {
+        this.rateSet = rateSet;
+    }
 
     public String getPickupLocationCode() {
         return pickupLocationCode;
@@ -60,4 +70,6 @@ public class ResRatesRequest {
     public void setCorpRateID(String corpRateID) {
         this.corpRateID = corpRateID;
     }
+
+
 }

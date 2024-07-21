@@ -46,7 +46,7 @@ public class TarifaController {
 
     @PostMapping("/search")
     public ResponseEntity<ResRatesResponse> getRates(@RequestBody ResRatesRequest request) {
-        ResRatesResponse response = tarifaService.getRates(request);
+        ResRatesResponse response = tarifaService.getRates(request, request.getRateSet());
         return ResponseEntity.ok(response);
     }
 }

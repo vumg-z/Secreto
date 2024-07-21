@@ -4,9 +4,25 @@ import java.util.List;
 
 public class ResRatesResponse {
 
+    private String message;
+
     private boolean success;
     private int count;
     private List<Rate> rates;
+
+    public ResRatesResponse() {
+    }
+
+    public ResRatesResponse(boolean success, String message) {
+        this.success = success;
+        this.message = message;
+    }
+
+    public ResRatesResponse(boolean success, List<Rate> rates) {
+        this.success = success;
+        this.rates = rates;
+        this.count = (rates != null) ? rates.size() : 0;
+    }
 
     // Getters and Setters
 
@@ -32,6 +48,10 @@ public class ResRatesResponse {
 
     public void setRates(List<Rate> rates) {
         this.rates = rates;
+    }
+
+    public String getMessage() {
+        return this.message;
     }
 
     public static class Rate {

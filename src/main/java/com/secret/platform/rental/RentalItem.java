@@ -31,6 +31,9 @@ public abstract class RentalItem {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "\"year\"")  // Quoting the year column
+    private Integer year;
+
     protected RentalItem(RentalItemBuilder<?> builder) {
         this.id = builder.id;
         this.name = builder.name;
@@ -45,6 +48,7 @@ public abstract class RentalItem {
         this.imageUrl = builder.imageUrl;
         this.owner = builder.owner;
         this.model3D = builder.model3D;
+        this.year = builder.year;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
@@ -113,6 +117,10 @@ public abstract class RentalItem {
         return model3D;
     }
 
+    public Integer getYear() {
+        return year;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -135,6 +143,7 @@ public abstract class RentalItem {
         private String imageUrl;
         private String owner;
         private String model3D;
+        private Integer year;
 
         public T setId(Long id) {
             this.id = id;
@@ -198,6 +207,11 @@ public abstract class RentalItem {
 
         public T setModel3D(String model3D) {
             this.model3D = model3D;
+            return self();
+        }
+
+        public T setYear(Integer year) {
+            this.year = year;
             return self();
         }
 

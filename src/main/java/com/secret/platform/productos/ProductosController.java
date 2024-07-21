@@ -21,10 +21,10 @@ public class ProductosController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Productos> getProductosById(@PathVariable Long id) {
-        Productos productos = productosService.getProductosById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Productos not found for this id :: " + id));
+        Productos productos = productosService.getProductosById(id);
         return ResponseEntity.ok().body(productos);
     }
+
 
     @PostMapping
     public Productos createProductos(@RequestBody Productos productos) {

@@ -15,6 +15,9 @@ public class VehicleClass {
     private String className;
     private String description;
 
+    @Column(name = "rate_set")
+    private String rateSet;
+
     @ManyToMany(mappedBy = "vehicleClasses")
     private Set<Vehicle> vehicles;
 
@@ -40,6 +43,15 @@ public class VehicleClass {
     }
 
     // Getters and Setters
+
+    public String getRateSet() {
+        return rateSet;
+    }
+
+    public void setRateSet(String rateSet) {
+        this.rateSet = rateSet;
+    }
+
 
     public Long getId() {
         return id;

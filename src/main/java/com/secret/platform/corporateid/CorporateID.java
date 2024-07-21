@@ -7,7 +7,11 @@ import com.secret.platform.productos.PaqueteProductosExtras;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Set;
-
+/**
+ * @deprecated This class is deprecated and will be removed in future versions.
+ *             Please use {@link com.secret.platform.corporate_account}
+ */
+@Deprecated
 @Entity
 public class CorporateID {
 
@@ -37,13 +41,7 @@ public class CorporateID {
     )
     private Set<TerminosAlquiler> terminosAlquiler;
 
-    @ManyToMany
-    @JoinTable(
-            name = "corporate_id_productos",
-            joinColumns = @JoinColumn(name = "corporate_id_id"),
-            inverseJoinColumns = @JoinColumn(name = "productos_id")
-    )
-    private Set<Productos> productos;
+
 
     @ManyToMany
     @JoinTable(
@@ -132,14 +130,6 @@ public class CorporateID {
 
     public void setTerminosAlquiler(Set<TerminosAlquiler> terminosAlquiler) {
         this.terminosAlquiler = terminosAlquiler;
-    }
-
-    public Set<Productos> getProductos() {
-        return productos;
-    }
-
-    public void setProductos(Set<Productos> productos) {
-        this.productos = productos;
     }
 
     public Set<PaqueteProductosExtras> getPaqueteProductosExtras() {
