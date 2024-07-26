@@ -25,7 +25,7 @@ public class ValidTypeCode {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "type_code", nullable = false, length = 2)
+    @Column(name = "type_code", nullable = false, length = 2, unique = true)
     private String typeCode;
 
     @Column(name = "description", length = 20)

@@ -69,7 +69,6 @@ class ValidTypeCodeServiceTest {
                 .build();
     }
 
-
     @Test
     void testCreateValidTypeCode() {
         when(validTypeCodeRepository.save(any(ValidTypeCode.class))).thenReturn(validTypeCode);
@@ -79,21 +78,21 @@ class ValidTypeCodeServiceTest {
     }
 
     @Test
-    void testGetValidTypeCodeById() {
-        when(validTypeCodeRepository.findById(1L)).thenReturn(Optional.of(validTypeCode));
+    void testGetValidTypeCodeByCode() {
+        when(validTypeCodeRepository.findByTypeCode("FC")).thenReturn(Optional.of(validTypeCode));
 
-        Optional<ValidTypeCode> result = validTypeCodeService.getValidTypeCodeById(1L);
+        Optional<ValidTypeCode> result = validTypeCodeService.getValidTypeCodeByCode("FC");
         assertTrue(result.isPresent());
         assertEquals(validTypeCode, result.get());
     }
 
     @Test
-    void testUpdateValidTypeCode() {
-        when(validTypeCodeRepository.findById(1L)).thenReturn(Optional.of(validTypeCode));
+    void testUpdateValidTypeCodeByCode() {
+        when(validTypeCodeRepository.findByTypeCode("FC")).thenReturn(Optional.of(validTypeCode));
         when(validTypeCodeRepository.save(any(ValidTypeCode.class))).thenReturn(validTypeCode);
 
         ValidTypeCode updatedValidTypeCode = ValidTypeCode.builder()
-                .typeCode("AF")
+                .typeCode("FC")
                 .description("Updated Description")
                 .note1("Updated Note 1")
                 .note2("Updated Note 2")
@@ -105,34 +104,34 @@ class ValidTypeCodeServiceTest {
                 .raPrintLibraryNumber("98")
                 .build();
 
-        ValidTypeCode result = validTypeCodeService.updateValidTypeCode(1L, updatedValidTypeCode);
+        ValidTypeCode result = validTypeCodeService.updateValidTypeCodeByCode("FC", updatedValidTypeCode);
         assertEquals(updatedValidTypeCode.getDescription(), result.getDescription());
         assertEquals(updatedValidTypeCode.getNote1(), result.getNote1());
     }
 
     @Test
-    void testDeleteValidTypeCode() {
-        when(validTypeCodeRepository.findById(1L)).thenReturn(Optional.of(validTypeCode));
+    void testDeleteValidTypeCodeByCode() {
+        when(validTypeCodeRepository.findByTypeCode("FC")).thenReturn(Optional.of(validTypeCode));
 
-        validTypeCodeService.deleteValidTypeCode(1L);
+        validTypeCodeService.deleteValidTypeCodeByCode("FC");
 
         verify(validTypeCodeRepository, times(1)).delete(validTypeCode);
     }
 
     @Test
-    void testGetValidTypeCodeById_NotFound() {
-        when(validTypeCodeRepository.findById(1L)).thenReturn(Optional.empty());
+    void testGetValidTypeCodeByCode_NotFound() {
+        when(validTypeCodeRepository.findByTypeCode("FC")).thenReturn(Optional.empty());
 
-        Optional<ValidTypeCode> result = validTypeCodeService.getValidTypeCodeById(1L);
+        Optional<ValidTypeCode> result = validTypeCodeService.getValidTypeCodeByCode("FC");
         assertFalse(result.isPresent());
     }
 
     @Test
-    void testDeleteValidTypeCode_NotFound() {
-        when(validTypeCodeRepository.findById(1L)).thenReturn(Optional.empty());
+    void testDeleteValidTypeCodeByCode_NotFound() {
+        when(validTypeCodeRepository.findByTypeCode("FC")).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> {
-            validTypeCodeService.deleteValidTypeCode(1L);
+            validTypeCodeService.deleteValidTypeCodeByCode("FC");
         });
     }
 
@@ -153,19 +152,19 @@ class ValidTypeCodeServiceTest {
     }
 
     @Test
-    void testGetValidTypeCodeCCById() {
-        when(validTypeCodeRepository.findById(2L)).thenReturn(Optional.of(validTypeCodeCC));
+    void testGetValidTypeCodeCCByCode() {
+        when(validTypeCodeRepository.findByTypeCode("CC")).thenReturn(Optional.of(validTypeCodeCC));
 
-        Optional<ValidTypeCode> result = validTypeCodeService.getValidTypeCodeById(2L);
+        Optional<ValidTypeCode> result = validTypeCodeService.getValidTypeCodeByCode("CC");
         assertTrue(result.isPresent());
         assertEquals(validTypeCodeCC, result.get());
     }
 
     @Test
-    void testGetValidTypeCodeCOById() {
-        when(validTypeCodeRepository.findById(3L)).thenReturn(Optional.of(validTypeCodeCO));
+    void testGetValidTypeCodeCOByCode() {
+        when(validTypeCodeRepository.findByTypeCode("CO")).thenReturn(Optional.of(validTypeCodeCO));
 
-        Optional<ValidTypeCode> result = validTypeCodeService.getValidTypeCodeById(3L);
+        Optional<ValidTypeCode> result = validTypeCodeService.getValidTypeCodeByCode("CO");
         assertTrue(result.isPresent());
         assertEquals(validTypeCodeCO, result.get());
     }

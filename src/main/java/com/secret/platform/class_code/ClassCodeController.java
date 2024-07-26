@@ -14,31 +14,39 @@ public class ClassCodeController {
     @Autowired
     private ClassCodeService classCodeService;
 
+    @PostMapping
+    public ResponseEntity<ClassCode> createClassCode(@RequestBody ClassCode classCode) {
+        return ResponseEntity.ok(classCodeService.createClassCode(classCode));
+    }
+
     @GetMapping
-    public List<ClassCode> getAllClassCodes() {
-        return classCodeService.getAllClassCodes();
+    public ResponseEntity<List<ClassCode>> getAllClassCodes() {
+        return ResponseEntity.ok(classCodeService.getAllClassCodes());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ClassCode> getClassCodeById(@PathVariable Long id) {
         return classCodeService.getClassCodeById(id)
                 .map(ResponseEntity::ok)
-                .orElseThrow(() -> new ResourceNotFoundException("ClassCode not found with id " + id));
-    }
-
-    @PostMapping
-    public ClassCode createClassCode(@RequestBody ClassCode classCode) {
-        return classCodeService.createClassCode(classCode);
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ClassCode> updateClassCode(@PathVariable Long id, @RequestBody ClassCode classCode) {
-        return ResponseEntity.ok(classCodeService.updateClassCode(id, classCode));
+    public ResponseEntity<ClassCode> updateClassCode(@PathVariable Long id, @RequestBody ClassCode classCodeDetails) {
+        try {
+            return ResponseEntity.ok(classCodeService.updateClassCode(id, classCodeDetails));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteClassCode(@PathVariable Long id) {
-        classCodeService.deleteClassCode(id);
-        return ResponseEntity.noContent().build();
+        try {
+            classCodeService.deleteClassCode(id);
+            return ResponseEntity.noContent().build();
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

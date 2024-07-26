@@ -17,17 +17,17 @@ public class ValidTypeCodeService {
         return validTypeCodeRepository.findAll();
     }
 
-    public Optional<ValidTypeCode> getValidTypeCodeById(Long id) {
-        return validTypeCodeRepository.findById(id);
+    public Optional<ValidTypeCode> getValidTypeCodeByCode(String code) {
+        return validTypeCodeRepository.findByTypeCode(code);
     }
 
     public ValidTypeCode createValidTypeCode(ValidTypeCode validTypeCode) {
         return validTypeCodeRepository.save(validTypeCode);
     }
 
-    public ValidTypeCode updateValidTypeCode(Long id, ValidTypeCode validTypeCodeDetails) {
-        ValidTypeCode validTypeCode = validTypeCodeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("ValidTypeCode not found for this id :: " + id));
+    public ValidTypeCode updateValidTypeCodeByCode(String code, ValidTypeCode validTypeCodeDetails) {
+        ValidTypeCode validTypeCode = validTypeCodeRepository.findByTypeCode(code)
+                .orElseThrow(() -> new ResourceNotFoundException("ValidTypeCode not found for this code :: " + code));
 
         validTypeCode.setTypeCode(validTypeCodeDetails.getTypeCode());
         validTypeCode.setDescription(validTypeCodeDetails.getDescription());
@@ -43,9 +43,9 @@ public class ValidTypeCodeService {
         return validTypeCodeRepository.save(validTypeCode);
     }
 
-    public void deleteValidTypeCode(Long id) {
-        ValidTypeCode validTypeCode = validTypeCodeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("ValidTypeCode not found for this id :: " + id));
+    public void deleteValidTypeCodeByCode(String code) {
+        ValidTypeCode validTypeCode = validTypeCodeRepository.findByTypeCode(code)
+                .orElseThrow(() -> new ResourceNotFoundException("ValidTypeCode not found for this code :: " + code));
 
         validTypeCodeRepository.delete(validTypeCode);
     }

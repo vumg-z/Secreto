@@ -21,7 +21,7 @@ public class Options {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "opt_code", nullable = false, unique = true)
+    @Column(name = "opt_code", nullable = false, unique = true, length = 10)
     private String optionCode;
 
     @Column(name = "short_desc")
@@ -93,7 +93,8 @@ public class Options {
     @Column(name = "type_flag")
     private String typeFlag;
 
-    @Column(name = "gl_account")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "gl_account_id")
     private GeneralLedger glAccount;
 
     /*
@@ -243,6 +244,7 @@ public class Options {
     This date should not be confused with the "Expire Date" in the Edit Optional Rates program which is used to turn off the ability to add an item to a contract.
      */
 
+    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "expire_date")
     private Date expireDate;
 
@@ -264,6 +266,7 @@ public class Options {
     EXAMPLE: Press (RET)
      */
 
+    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "start_date")
     private Date startDate;
 
@@ -276,11 +279,12 @@ public class Options {
     @Column(name = "blk_1wy_miles_seq")
     private Integer blk1wyMilesSeq;
 
+    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "modified_date")
     private Date modifiedDate;
 
     @Column(name = "modified_time")
-    private Double modifiedTime;
+    private String modifiedTime;
 
     @Column(name = "modified_employee")
     private String modifiedEmployee;

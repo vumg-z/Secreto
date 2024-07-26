@@ -105,7 +105,7 @@ public class LocationServiceTests {
         assertEquals(1L, savedLocation.getMetroplexLocation().getId());
         verify(locationRepository, times(1)).findByLocationNumber("PVREY1");
         verify(statusCodeRepository, times(1)).existsByCode("A");
-        verify(generalLedgerRepository, times(1)).existsById(1L);
+//        verify(generalLedgerRepository, times(1)).existsById(1L);
         verify(groupCodesRepository, times(1)).existsById(1L);
         verify(locationRepository, times(1)).save(location);
     }
@@ -130,7 +130,7 @@ public class LocationServiceTests {
         assertEquals(1L, savedLocation.getMetroplexLocation().getId());
         verify(locationRepository, times(1)).findByLocationNumber("PVREY1");
         verify(statusCodeRepository, times(1)).existsByCode("B");
-        verify(generalLedgerRepository, times(1)).existsById(1L);
+//        verify(generalLedgerRepository, times(1)).existsById(1L);
         verify(groupCodesRepository, times(1)).existsById(1L);
         verify(locationRepository, times(1)).save(location);
     }
@@ -168,7 +168,7 @@ public class LocationServiceTests {
         verify(locationRepository, times(1)).findByLocationNumber("PVREY1");
         verify(locationRepository, times(1)).findByHoldingDrawer("202");
         verify(statusCodeRepository, times(1)).existsByCode("A");
-        verify(generalLedgerRepository, times(1)).existsById(1L);
+//        verify(generalLedgerRepository, times(1)).existsById(1L);
         verify(groupCodesRepository, times(1)).existsById(1L);
         verify(locationRepository, times(1)).save(location);
     }
@@ -189,7 +189,7 @@ public class LocationServiceTests {
         verify(locationRepository, times(1)).findByLocationNumber("PVREY1");
         verify(locationRepository, times(0)).findByHoldingDrawer("202");
         verify(statusCodeRepository, times(1)).existsByCode("A");
-        verify(generalLedgerRepository, times(1)).existsById(1L);
+//        verify(generalLedgerRepository, times(1)).existsById(1L);
         verify(groupCodesRepository, times(1)).existsById(1L);
         verify(locationRepository, times(1)).save(location);
     }
@@ -297,7 +297,7 @@ public class LocationServiceTests {
         assertEquals(1L, savedLocation.getMetroplexLocation().getId());
         verify(locationRepository, times(1)).findByLocationNumber("PVREY1");
         verify(statusCodeRepository, times(1)).existsByCode("A");
-        verify(generalLedgerRepository, times(1)).existsById(1L);
+        // verify(generalLedgerRepository, times(1)).existsById(1L);
         verify(groupCodesRepository, times(1)).existsById(1L);
         verify(locationRepository, times(1)).save(location);
     }

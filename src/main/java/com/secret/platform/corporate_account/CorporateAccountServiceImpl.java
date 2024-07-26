@@ -1,5 +1,7 @@
 package com.secret.platform.corporate_account;
 
+import com.secret.platform.corporate_contract.CorporateContract;
+import com.secret.platform.corporate_contract.CorporateContractRepository;
 import com.secret.platform.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,6 +15,9 @@ public class CorporateAccountServiceImpl implements CorporateAccountService {
     @Autowired
     private CorporateAccountRepository corporateAccountRepository;
 
+    @Autowired
+    private CorporateContractRepository corporateContractRepository;
+
     @Override
     public List<CorporateAccount> getAllCorporateAccounts() {
         return corporateAccountRepository.findAll();
@@ -25,6 +30,7 @@ public class CorporateAccountServiceImpl implements CorporateAccountService {
 
     @Override
     public CorporateAccount createCorporateAccount(CorporateAccount corporateAccount) {
+        validateCorporateContract(corporateAccount.getCorporateContract());
         return corporateAccountRepository.save(corporateAccount);
     }
 
@@ -32,6 +38,7 @@ public class CorporateAccountServiceImpl implements CorporateAccountService {
     public CorporateAccount updateCorporateAccount(Long id, CorporateAccount corporateAccount) {
         return corporateAccountRepository.findById(id)
                 .map(existingAccount -> {
+                    validateCorporateContract(corporateAccount.getCorporateContract());
                     corporateAccount.setId(id);
                     return corporateAccountRepository.save(corporateAccount);
                 })
@@ -44,6 +51,13 @@ public class CorporateAccountServiceImpl implements CorporateAccountService {
             corporateAccountRepository.deleteById(id);
         } else {
             throw new ResourceNotFoundException("CorporateAccount not found with id " + id);
+        }
+    }
+
+    private void validateCorporateContract(CorporateContract corporateContract) {
+        if (corporateContract != null && corporateContract.getContractNumber() != null) {
+            corporateContractRepository.findByContractNumber(corporateContract.getContractNumber())
+                    .orElseThrow(() -> new ResourceNotFoundException("CorporateContract not found with contract number " + corporateContract.getContractNumber()));
         }
     }
 }

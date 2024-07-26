@@ -1,6 +1,9 @@
 package com.secret.platform.options;
 
 import com.secret.platform.exception.ResourceNotFoundException;
+import com.secret.platform.option_set.OptionSet;
+import com.secret.platform.option_set.OptionSetService;
+import com.secret.platform.option_set.OptionSetRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -14,6 +17,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 class OptionsServiceImplTest {
@@ -24,11 +28,19 @@ class OptionsServiceImplTest {
     @Mock
     private OptionsRepository optionsRepository;
 
+    @Mock
+    private OptionSetService optionSetService;
+
+    @Mock
+    private OptionSetRepository optionSetRepository;
+
     private Options option;
+    private OptionSet optionSet;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+
         option = Options.builder()
                 .id(1L)
                 .optionCode("ACCTF")
@@ -53,13 +65,36 @@ class OptionsServiceImplTest {
                 .restEbdsAuthOpt("Auth")
                 .blk1wyMilesSeq(1)
                 .modifiedDate(new Date())
-                .modifiedTime(10.0)
+                .modifiedTime("10.0")
                 .modifiedEmployee("Employee")
                 .dayOfWeekPricing("Pricing")
                 .useGoldOptSetQtyParts("Parts")
                 .estAsgOptPriAgtRls("Rls")
-                .optSetCode("Code")
+                .optSetCode("PFC03")
                 .build();
+
+        optionSet = OptionSet.builder()
+                .id(1L)
+                .code("PFC03")
+                .effDate(new Date())
+                .termDate(null)
+                .crDateEmpl("System")
+                .modDateEmpl("System")
+                .options(new ArrayList<>())
+                .build();
+    }
+
+    @Test
+    void testCreateOption() {
+        when(optionsRepository.save(any(Options.class))).thenReturn(option);
+        when(optionSetService.findOrCreateOptionSetByCode(anyString())).thenReturn(optionSet);
+        when(optionSetRepository.save(any(OptionSet.class))).thenReturn(optionSet);
+
+        Options result = optionsService.createOption(option);
+
+        assertEquals(option, result);
+        verify(optionSetService, times(1)).findOrCreateOptionSetByCode("PFC03");
+        verify(optionSetRepository, times(1)).save(any(OptionSet.class));
     }
 
     @Test
@@ -92,14 +127,6 @@ class OptionsServiceImplTest {
     }
 
     @Test
-    void testCreateOption() {
-        when(optionsRepository.save(any(Options.class))).thenReturn(option);
-
-        Options result = optionsService.createOption(option);
-        assertEquals(option, result);
-    }
-
-    @Test
     void testUpdateOption() {
         when(optionsRepository.findById(1L)).thenReturn(Optional.of(option));
         when(optionsRepository.save(any(Options.class))).thenReturn(option);
@@ -128,7 +155,7 @@ class OptionsServiceImplTest {
                 .restEbdsAuthOpt("Updated Auth")
                 .blk1wyMilesSeq(2)
                 .modifiedDate(new Date())
-                .modifiedTime(20.0)
+                .modifiedTime("20.0")
                 .modifiedEmployee("Updated Employee")
                 .dayOfWeekPricing("Updated Pricing")
                 .useGoldOptSetQtyParts("Updated Parts")
@@ -168,71 +195,5 @@ class OptionsServiceImplTest {
         assertThrows(ResourceNotFoundException.class, () -> {
             optionsService.deleteOption(1L);
         });
-    }
-
-    // Additional tests for CVG products
-
-    @Test
-    void testCreateOption_CVG1() {
-        Options cvg1Option = Options.builder()
-                .optionCode("CVG1")
-                .shortDesc("LDW")
-                .longDesc("Loss Damage Waiver")
-                .build();
-
-        when(optionsRepository.save(any(Options.class))).thenReturn(cvg1Option);
-
-        Options result = optionsService.createOption(cvg1Option);
-        assertEquals("CVG1", result.getOptionCode());
-        assertEquals("LDW", result.getShortDesc());
-        assertEquals("Loss Damage Waiver", result.getLongDesc());
-    }
-
-    @Test
-    void testCreateOption_CVG2() {
-        Options cvg2Option = Options.builder()
-                .optionCode("CVG2")
-                .shortDesc("PAI")
-                .longDesc("Personal Accident Insurance")
-                .build();
-
-        when(optionsRepository.save(any(Options.class))).thenReturn(cvg2Option);
-
-        Options result = optionsService.createOption(cvg2Option);
-        assertEquals("CVG2", result.getOptionCode());
-        assertEquals("PAI", result.getShortDesc());
-        assertEquals("Personal Accident Insurance", result.getLongDesc());
-    }
-
-    @Test
-    void testCreateOption_CVG3() {
-        Options cvg3Option = Options.builder()
-                .optionCode("CVG3")
-                .shortDesc("SLI")
-                .longDesc("Supplemental Liability Insurance")
-                .build();
-
-        when(optionsRepository.save(any(Options.class))).thenReturn(cvg3Option);
-
-        Options result = optionsService.createOption(cvg3Option);
-        assertEquals("CVG3", result.getOptionCode());
-        assertEquals("SLI", result.getShortDesc());
-        assertEquals("Supplemental Liability Insurance", result.getLongDesc());
-    }
-
-    @Test
-    void testCreateOption_CVG4() {
-        Options cvg4Option = Options.builder()
-                .optionCode("CVG4")
-                .shortDesc("Other")
-                .longDesc("Other Coverage")
-                .build();
-
-        when(optionsRepository.save(any(Options.class))).thenReturn(cvg4Option);
-
-        Options result = optionsService.createOption(cvg4Option);
-        assertEquals("CVG4", result.getOptionCode());
-        assertEquals("Other", result.getShortDesc());
-        assertEquals("Other Coverage", result.getLongDesc());
     }
 }

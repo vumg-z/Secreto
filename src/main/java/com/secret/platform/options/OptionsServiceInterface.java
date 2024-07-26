@@ -10,4 +10,6 @@ public interface OptionsServiceInterface {
     Options updateOption(Long id, Options optionDetails);
     void deleteOption(Long id);
     Options findByOptionCode(String optionCode);
+
+    List<Options> findByOptSetCode(String optSetCode);
 }

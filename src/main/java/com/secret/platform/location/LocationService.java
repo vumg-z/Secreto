@@ -1,10 +1,13 @@
 package com.secret.platform.location;
 
 import com.secret.platform.config.FeatureFlagServiceInterface;
+import com.secret.platform.exception.ResourceNotFoundException;
 import com.secret.platform.general_ledger.GeneralLedger;
 import com.secret.platform.general_ledger.GeneralLedgerRepository;
 import com.secret.platform.group_code.GroupCodes;
 import com.secret.platform.group_code.GroupCodesRepository;
+import com.secret.platform.rate_product.RateProduct;
+import com.secret.platform.rate_product.RateProductRepository;
 import com.secret.platform.status_code.StatusCode;
 import com.secret.platform.status_code.StatusCodeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,14 +34,15 @@ public class LocationService implements LocationServiceInterface {
     @Autowired
     private GroupCodesRepository groupCodesRepository;
 
+    @Autowired
+    private RateProductRepository rateProductRepository;
+
     public Location saveLocation(Location location) {
-        validateProfitCenterNumber(location.getProfitCenterNumber());
+        //validateProfitCenterNumber(location.getProfitCenterNumber());
         validateDoFuelCalc(location.getDoFuelCalc());
         validateAutoVehicleSelect(location.getAutoVehicleSelect());
         validateCheckOutFuel(location.getCheckOutFuel());
         validateValidRentalLoc(location.getValidRentalLoc());
-        validateInterOfcArAcct(location.getInterOfcArAcct());
-
         validateAllowMultiLanguageRa(location.getAllowMultiLanguageRa());
         validateAllowWaitRas(location.getAllowWaitRas());
 
@@ -73,12 +77,20 @@ public class LocationService implements LocationServiceInterface {
         // Validate metroplex location
         validateMetroplexLocation(location.getMetroplexLocation());
 
+        // Validate and set the RateProduct
+        if (location.getWalkupRate() != null) {
+            RateProduct rateProduct = rateProductRepository.findById(location.getWalkupRate().getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid rate product"));
+            location.setWalkupRate(rateProduct);
+        }
+
         return locationRepository.save(location);
     }
 
     public List<Location> findLocationsByGroupCode(String groupCode) {
         return locationRepository.findByMetroplexLocation_GroupCode(groupCode);
     }
+
     @Override
     public Optional<Location> findLocationByNumber(String locationNumber) {
         return locationRepository.findByLocationNumber(locationNumber);
@@ -135,12 +147,6 @@ public class LocationService implements LocationServiceInterface {
         }
     }
 
-    public void validateInterOfcArAcct(GeneralLedger interOfcArAcct) {
-        if (interOfcArAcct == null || !generalLedgerRepository.existsById(interOfcArAcct.getId())) {
-            throw new IllegalArgumentException("INTER-OFC A/R ACCT must be a valid General Ledger account");
-        }
-    }
-
     private void validateValidRentalLoc(String validRentalLoc) {
         if (validRentalLoc == null || !validRentalLoc.matches("[YNyPwWCoOnFR]")) {
             throw new IllegalArgumentException("VALID RENTAL LOC must be one of the valid codes: Y, N, y, P, W, C, O, X, n, F, R");
@@ -163,5 +169,56 @@ public class LocationService implements LocationServiceInterface {
         if (allowWaitRas == null || !allowWaitRas.matches("[YN]")) {
             throw new IllegalArgumentException("ALLOW WAIT RAs must be 'Y' or 'N'");
         }
+    }
+
+    @Override
+    public List<Location> getAllLocations() {
+        return locationRepository.findAll();
+    }
+
+    @Override
+    public Location updateLocation(Long id, Location locationDetails) {
+        Location existingLocation = locationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Location not found with id " + id));
+
+        existingLocation.setLocationName(locationDetails.getLocationName());
+        existingLocation.setAddressLine1(locationDetails.getAddressLine1());
+        existingLocation.setAddressLine2(locationDetails.getAddressLine2());
+        existingLocation.setAddressLine3(locationDetails.getAddressLine3());
+        existingLocation.setPhone(locationDetails.getPhone());
+        existingLocation.setProfitCenterNumber(locationDetails.getProfitCenterNumber());
+        existingLocation.setDoFuelCalc(locationDetails.getDoFuelCalc());
+        existingLocation.setHoldingDrawer(locationDetails.getHoldingDrawer());
+        existingLocation.setAutoVehicleSelect(locationDetails.getAutoVehicleSelect());
+        existingLocation.setCheckInStatus(locationDetails.getCheckInStatus());
+        existingLocation.setCheckOutFuel(locationDetails.getCheckOutFuel());
+        existingLocation.setValidRentalLoc(locationDetails.getValidRentalLoc());
+        existingLocation.setInterOfcArAcct(locationDetails.getInterOfcArAcct());
+        existingLocation.setAllowMultiLanguageRa(locationDetails.getAllowMultiLanguageRa());
+        existingLocation.setAllowWaitRas(locationDetails.getAllowWaitRas());
+        existingLocation.setRegion(locationDetails.getRegion());
+        existingLocation.setDispatchControl(locationDetails.getDispatchControl());
+        existingLocation.setMetroplexLocation(locationDetails.getMetroplexLocation());
+
+        // Validate and set the RateProduct
+        if (locationDetails.getWalkupRate() != null) {
+            RateProduct rateProduct = rateProductRepository.findById(locationDetails.getWalkupRate().getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid rate product"));
+            existingLocation.setWalkupRate(rateProduct);
+        } else {
+            existingLocation.setWalkupRate(null);
+        }
+
+        return locationRepository.save(existingLocation);
+    }
+    public Optional<Location> getLocationById(Long id) {
+        return locationRepository.findById(id);
+    }
+    @Override
+    public void deleteLocation(Long id) {
+        if (!locationRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Location not found with id " + id);
+        }
+        locationRepository.deleteById(id);
     }
 }

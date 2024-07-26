@@ -1,6 +1,8 @@
 package com.secret.platform.class_code;
 
 import com.secret.platform.exception.ResourceNotFoundException;
+import com.secret.platform.location.Location;
+import com.secret.platform.pricing_code.PricingCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +27,10 @@ public class ClassCodeServiceImpl implements ClassCodeService {
 
     @Override
     public ClassCode createClassCode(ClassCode classCode) {
+        // Validate Location and PricingCode
+        validateLocation(classCode.getLocation());
+        validatePricingCode(classCode.getPricingCode());
+
         return classCodeRepository.save(classCode);
     }
 
@@ -32,7 +38,10 @@ public class ClassCodeServiceImpl implements ClassCodeService {
     public ClassCode updateClassCode(Long id, ClassCode classCode) {
         return classCodeRepository.findById(id)
                 .map(existingClassCode -> {
+                    // Set the ID and validate relationships
                     classCode.setId(id);
+                    validateLocation(classCode.getLocation());
+                    validatePricingCode(classCode.getPricingCode());
                     return classCodeRepository.save(classCode);
                 })
                 .orElseThrow(() -> new ResourceNotFoundException("ClassCode not found with id " + id));
@@ -44,6 +53,18 @@ public class ClassCodeServiceImpl implements ClassCodeService {
             classCodeRepository.deleteById(id);
         } else {
             throw new ResourceNotFoundException("ClassCode not found with id " + id);
+        }
+    }
+
+    private void validateLocation(Location location) {
+        if (location == null || location.getId() == null) {
+            throw new IllegalArgumentException("Valid Location is required");
+        }
+    }
+
+    private void validatePricingCode(PricingCode pricingCode) {
+        if (pricingCode == null || pricingCode.getId() == null) {
+            throw new IllegalArgumentException("Valid PricingCode is required");
         }
     }
 }

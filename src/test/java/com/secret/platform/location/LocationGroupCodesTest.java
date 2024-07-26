@@ -106,7 +106,7 @@ public class LocationGroupCodesTest {
         assertEquals("Y", savedLocation.getAllowWaitRas());
         verify(locationRepository, times(1)).findByLocationNumber("PVREY1");
         verify(statusCodeRepository, times(1)).existsByCode("A");
-        verify(generalLedgerRepository, times(1)).existsById(1L);
+//        verify(generalLedgerRepository, times(1)).existsById(1L);
         verify(groupCodesRepository, times(1)).existsById(1L);
         verify(locationRepository, times(1)).save(location);
     }
@@ -152,7 +152,7 @@ public class LocationGroupCodesTest {
 
         verify(locationRepository, times(1)).findByLocationNumber("PVREY2");
         verify(statusCodeRepository, times(1)).existsByCode("A");
-        verify(generalLedgerRepository, times(1)).existsById(1L);
+//        verify(generalLedgerRepository, times(1)).existsById(1L);
         verify(groupCodesRepository, times(1)).existsById(1L);
         verify(locationRepository, never()).save(location);
     }

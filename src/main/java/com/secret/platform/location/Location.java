@@ -1,7 +1,9 @@
 package com.secret.platform.location;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.secret.platform.general_ledger.GeneralLedger;
 import com.secret.platform.group_code.GroupCodes;
+import com.secret.platform.rate_product.RateProduct;
 import com.secret.platform.rate_set.RateSet;
 import com.secret.platform.status_code.StatusCode;
 import jakarta.persistence.*;
@@ -98,12 +100,15 @@ public class Location {
     @Column(name = "allow_wait_ras", length = 1)
     private String allowWaitRas;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rate_set_id")
+    @JsonBackReference
     private RateSet rateSet;
 
-    @JsonProperty("walkup_rate")
-    private String walkupRate;
+
+    @ManyToOne
+    @JoinColumn(name = "walkup_rate_id")
+    private RateProduct walkupRate;
 
     @JsonProperty("net_rate_set")
     private String netRateSet;

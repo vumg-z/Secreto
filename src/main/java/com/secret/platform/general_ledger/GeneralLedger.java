@@ -3,9 +3,11 @@ package com.secret.platform.general_ledger;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.io.Serializable;
+
 @Entity
 @Table(name = "general_ledger")
-public class GeneralLedger {
+public class GeneralLedger implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
