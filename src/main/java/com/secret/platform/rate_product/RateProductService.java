@@ -1,6 +1,7 @@
 package com.secret.platform.rate_product;
 
 import com.secret.platform.class_code.ClassCode;
+import com.secret.platform.class_code.ClassCodeDTO;
 import com.secret.platform.location.Location;
 
 import java.util.List;
@@ -15,4 +16,7 @@ public interface RateProductService {
     void deleteRateProduct(Long id);
 
     List<ClassCode> getAllClassesWithRatesByLocation(Location defaultLocation);
+
+    RateProduct addClassesToRateProduct(List<ClassCodeDTO> classCodeDTOs);
+
 }

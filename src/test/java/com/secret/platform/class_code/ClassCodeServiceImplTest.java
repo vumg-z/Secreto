@@ -2,7 +2,9 @@ package com.secret.platform.class_code;
 
 import com.secret.platform.exception.ResourceNotFoundException;
 import com.secret.platform.location.Location;
+import com.secret.platform.location.LocationRepository;
 import com.secret.platform.pricing_code.PricingCode;
+import com.secret.platform.pricing_code.PricingCodeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -21,6 +23,12 @@ public class ClassCodeServiceImplTest {
     @Mock
     private ClassCodeRepository classCodeRepository;
 
+    @Mock
+    private LocationRepository locationRepository;
+
+    @Mock
+    private PricingCodeRepository pricingCodeRepository;
+
     @InjectMocks
     private ClassCodeServiceImpl classCodeService;
 
@@ -32,8 +40,8 @@ public class ClassCodeServiceImplTest {
     public void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        location = Location.builder().id(1L).build();
-        pricingCode = PricingCode.builder().id(1L).build();
+        location = Location.builder().id(1L).locationNumber("L123").build();
+        pricingCode = PricingCode.builder().id(1L).code("PC1").build();
 
         classCode = ClassCode.builder()
                 .location(location)
@@ -68,6 +76,8 @@ public class ClassCodeServiceImplTest {
 
     @Test
     public void testCreateClassCode() {
+        when(locationRepository.findByLocationNumber("L123")).thenReturn(Optional.of(location));
+        when(pricingCodeRepository.findByCode("PC1")).thenReturn(Optional.of(pricingCode));
         when(classCodeRepository.save(classCode)).thenReturn(classCode);
 
         ClassCode result = classCodeService.createClassCode(classCode);
@@ -77,13 +87,13 @@ public class ClassCodeServiceImplTest {
 
     @Test
     public void testCreateClassCode_InvalidLocation() {
-        classCode.setLocation(null);
+        when(locationRepository.findByLocationNumber("L123")).thenReturn(Optional.empty());
 
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+        Exception exception = assertThrows(ResourceNotFoundException.class, () -> {
             classCodeService.createClassCode(classCode);
         });
 
-        String expectedMessage = "Valid Location is required";
+        String expectedMessage = "Location not found with locationNumber L123";
         String actualMessage = exception.getMessage();
 
         assertTrue(actualMessage.contains(expectedMessage));
@@ -92,13 +102,14 @@ public class ClassCodeServiceImplTest {
 
     @Test
     public void testCreateClassCode_InvalidPricingCode() {
-        classCode.setPricingCode(null);
+        when(locationRepository.findByLocationNumber("L123")).thenReturn(Optional.of(location));
+        when(pricingCodeRepository.findByCode("PC1")).thenReturn(Optional.empty());
 
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+        Exception exception = assertThrows(ResourceNotFoundException.class, () -> {
             classCodeService.createClassCode(classCode);
         });
 
-        String expectedMessage = "Valid PricingCode is required";
+        String expectedMessage = "PricingCode not found with code PC1";
         String actualMessage = exception.getMessage();
 
         assertTrue(actualMessage.contains(expectedMessage));
@@ -111,6 +122,8 @@ public class ClassCodeServiceImplTest {
         ClassCode updatedClassCode = ClassCode.builder().id(1L).classCode("NEW_CODE").location(location).pricingCode(pricingCode).build();
 
         when(classCodeRepository.findById(1L)).thenReturn(Optional.of(existingClassCode));
+        when(locationRepository.findByLocationNumber("L123")).thenReturn(Optional.of(location));
+        when(pricingCodeRepository.findByCode("PC1")).thenReturn(Optional.of(pricingCode));
         when(classCodeRepository.save(updatedClassCode)).thenReturn(updatedClassCode);
 
         ClassCode result = classCodeService.updateClassCode(1L, updatedClassCode);
@@ -120,15 +133,16 @@ public class ClassCodeServiceImplTest {
 
     @Test
     public void testUpdateClassCode_InvalidLocation() {
-        ClassCode updatedClassCode = ClassCode.builder().id(1L).classCode("NEW_CODE").location(null).pricingCode(pricingCode).build();
+        ClassCode updatedClassCode = ClassCode.builder().id(1L).classCode("NEW_CODE").location(location).pricingCode(pricingCode).build();
 
         when(classCodeRepository.findById(1L)).thenReturn(Optional.of(classCode));
+        when(locationRepository.findByLocationNumber("L123")).thenReturn(Optional.empty());
 
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+        Exception exception = assertThrows(ResourceNotFoundException.class, () -> {
             classCodeService.updateClassCode(1L, updatedClassCode);
         });
 
-        String expectedMessage = "Valid Location is required";
+        String expectedMessage = "Location not found with locationNumber L123";
         String actualMessage = exception.getMessage();
 
         assertTrue(actualMessage.contains(expectedMessage));
@@ -137,15 +151,17 @@ public class ClassCodeServiceImplTest {
 
     @Test
     public void testUpdateClassCode_InvalidPricingCode() {
-        ClassCode updatedClassCode = ClassCode.builder().id(1L).classCode("NEW_CODE").location(location).pricingCode(null).build();
+        ClassCode updatedClassCode = ClassCode.builder().id(1L).classCode("NEW_CODE").location(location).pricingCode(pricingCode).build();
 
         when(classCodeRepository.findById(1L)).thenReturn(Optional.of(classCode));
+        when(locationRepository.findByLocationNumber("L123")).thenReturn(Optional.of(location));
+        when(pricingCodeRepository.findByCode("PC1")).thenReturn(Optional.empty());
 
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+        Exception exception = assertThrows(ResourceNotFoundException.class, () -> {
             classCodeService.updateClassCode(1L, updatedClassCode);
         });
 
-        String expectedMessage = "Valid PricingCode is required";
+        String expectedMessage = "PricingCode not found with code PC1";
         String actualMessage = exception.getMessage();
 
         assertTrue(actualMessage.contains(expectedMessage));

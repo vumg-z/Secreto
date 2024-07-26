@@ -1,5 +1,6 @@
 package com.secret.platform.rate_product;
 
+import com.secret.platform.class_code.ClassCodeDTO;
 import com.secret.platform.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,5 +56,11 @@ public class RateProductController {
     public ResponseEntity<Void> deleteRateProduct(@PathVariable Long id) {
         rateProductService.deleteRateProduct(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/add-classes")
+    public ResponseEntity<RateProduct> addClassesToRateProduct(@RequestBody List<ClassCodeDTO> classCodeDTOs) {
+        RateProduct updatedRateProduct = rateProductService.addClassesToRateProduct(classCodeDTOs);
+        return ResponseEntity.ok(updatedRateProduct);
     }
 }

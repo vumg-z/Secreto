@@ -1,5 +1,6 @@
 package com.secret.platform.class_code;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.secret.platform.location.Location;
 import com.secret.platform.pricing_code.PricingCode;
 import com.secret.platform.rate_product.RateProduct;
@@ -26,11 +27,12 @@ public class ClassCode {
     private String description = "";
 
     @ManyToOne
-    @JoinColumn(name = "pricing_code_id", nullable = false)
+    @JoinColumn(name = "pricing_code_id")
     private PricingCode pricingCode;
 
     @ManyToOne
     @JoinColumn(name = "rate_product_id", nullable = true)
+    @JsonBackReference
     private RateProduct rateProduct;
 
     private double dayRate = 0.0;

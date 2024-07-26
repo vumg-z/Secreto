@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ClassCodeRepository extends JpaRepository<ClassCode, Long> {
@@ -14,4 +15,8 @@ public interface ClassCodeRepository extends JpaRepository<ClassCode, Long> {
 
     List<ClassCode> findAllByRateProduct(RateProduct rateProduct);
     List<ClassCode> findAllByLocation(Location location);
+    Optional<ClassCode> findByClassCode(String classCode);
+    List<ClassCode> findByRateProduct(RateProduct rateProduct);
+
+
 }

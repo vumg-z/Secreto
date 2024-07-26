@@ -1,6 +1,7 @@
 package com.secret.platform.rate_product;
 
 import com.secret.platform.class_code.ClassCode;
+import com.secret.platform.class_code.ClassCodeDTO;
 import com.secret.platform.class_code.ClassCodeRepository;
 import com.secret.platform.exception.ResourceNotFoundException;
 import com.secret.platform.location.Location;
@@ -270,5 +271,35 @@ public class RateProductServiceImpl implements RateProductService {
             }
         }
         return classCodes;
+    }
+
+    @Override
+    public RateProduct addClassesToRateProduct(List<ClassCodeDTO> classCodeDTOs) {
+        if (classCodeDTOs.isEmpty()) {
+            throw new IllegalArgumentException("Class code list cannot be empty.");
+        }
+
+        // Get the RateProduct using the rateProductNumber from the first DTO (assuming all have the same rateProductNumber)
+        String rateProductNumber = classCodeDTOs.get(0).getRateProductNumber();
+        RateProduct rateProduct = rateProductRepository.findByProduct(rateProductNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("RateProduct not found with product number " + rateProductNumber));
+
+        for (ClassCodeDTO classCodeDTO : classCodeDTOs) {
+            ClassCode classCode = classCodeRepository.findByClassCode(classCodeDTO.getClassCode())
+                    .orElseThrow(() -> new ResourceNotFoundException("ClassCode not found with class code " + classCodeDTO.getClassCode()));
+
+            classCode.setRateProduct(rateProduct);
+            classCode.setDayRate(classCodeDTO.getDayRate());
+            classCode.setWeekRate(classCodeDTO.getWeekRate());
+            classCode.setMonthRate(classCodeDTO.getMonthRate());
+            classCode.setXDayRate(classCodeDTO.getXDayRate());
+            classCode.setHourRate(classCodeDTO.getHourRate());
+            classCode.setMileRate(classCodeDTO.getMileRate());
+
+            classCodeRepository.save(classCode);
+        }
+
+        rateProduct.getClassCodes().addAll(classCodeRepository.findByRateProduct(rateProduct));
+        return rateProductRepository.save(rateProduct);
     }
 }
