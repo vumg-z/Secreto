@@ -1,5 +1,7 @@
 package com.secret.platform.rate_product;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.secret.platform.class_code.ClassCode;
 import com.secret.platform.option_set.OptionSet;
 import com.secret.platform.options.Options;
@@ -26,7 +28,14 @@ public class RateProduct {
 
     @ManyToOne
     @JoinColumn(name = "rate_set_id")
+    @JsonBackReference
     private RateSet rateSet;
+
+    @Transient // This field will not be persisted in the database
+    @JsonProperty("rateSetCode")
+    public String getRateSetCode() {
+        return rateSet != null ? rateSet.getRateSetCode() : null;
+    }
 
     private String product;
 
