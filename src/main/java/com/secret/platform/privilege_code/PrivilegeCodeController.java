@@ -26,7 +26,7 @@ public class PrivilegeCodeController {
         return ResponseEntity.ok(privilegeCode);
     }
 
-    @PostMapping
+    @PostMapping(consumes = "application/json")
     public ResponseEntity<PrivilegeCode> createPrivilegeCode(@RequestBody PrivilegeCode privilegeCode) {
         PrivilegeCode createdPrivilegeCode = privilegeCodeService.createPrivilegeCode(privilegeCode);
         return ResponseEntity.ok(createdPrivilegeCode);
@@ -44,3 +44,6 @@ public class PrivilegeCodeController {
         return ResponseEntity.noContent().build();
     }
 }
+
+
+

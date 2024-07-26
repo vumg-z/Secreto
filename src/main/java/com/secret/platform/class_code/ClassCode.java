@@ -1,6 +1,7 @@
 package com.secret.platform.class_code;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.secret.platform.location.Location;
 import com.secret.platform.pricing_code.PricingCode;
 import com.secret.platform.rate_product.RateProduct;

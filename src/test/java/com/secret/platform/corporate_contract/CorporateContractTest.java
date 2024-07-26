@@ -19,7 +19,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,10 +44,10 @@ class CorporateContractServiceTest {
     @BeforeEach
     void setUp() {
         privilegeCode = new PrivilegeCode();
-        privilegeCode.setId(1L);
+        privilegeCode.setCode("PRIV1");
 
         rateProduct = new RateProduct();
-        rateProduct.setId(1L);
+        rateProduct.setProduct("MI2");
 
         corporateContract = CorporateContract.builder()
                 .id(1L)
@@ -60,8 +60,19 @@ class CorporateContractServiceTest {
 
     @Test
     void testCreateCorporateContract() {
-        when(privilegeCodeRepository.findById(anyLong())).thenReturn(Optional.of(privilegeCode));
-        when(rateProductRepository.findById(anyLong())).thenReturn(Optional.of(rateProduct));
+        PrivilegeCode privilegeCode = new PrivilegeCode();
+        privilegeCode.setCode("PRIV1");
+
+        RateProduct rateProduct = new RateProduct();
+        rateProduct.setProduct("MI2");
+
+        CorporateContract corporateContract = new CorporateContract();
+        corporateContract.setContractNumber("CON123");
+        corporateContract.setRateProduct(rateProduct);
+        corporateContract.setPrivilegeCodes(List.of(privilegeCode));
+
+        when(privilegeCodeRepository.findByCode(anyString())).thenReturn(Optional.of(privilegeCode));
+        when(rateProductRepository.findByProduct(anyString())).thenReturn(Optional.of(rateProduct));
         when(corporateContractRepository.save(any(CorporateContract.class))).thenReturn(corporateContract);
 
         CorporateContract result = corporateContractService.createCorporateContract(corporateContract);
@@ -73,9 +84,20 @@ class CorporateContractServiceTest {
 
     @Test
     void testUpdateCorporateContract() {
+        PrivilegeCode privilegeCode = new PrivilegeCode();
+        privilegeCode.setCode("PRIV1");
+
+        RateProduct rateProduct = new RateProduct();
+        rateProduct.setProduct("MI2");
+
+        CorporateContract corporateContract = new CorporateContract();
+        corporateContract.setContractNumber("CON123");
+        corporateContract.setRateProduct(rateProduct);
+        corporateContract.setPrivilegeCodes(List.of(privilegeCode));
+
         when(corporateContractRepository.findById(anyLong())).thenReturn(Optional.of(corporateContract));
-        when(privilegeCodeRepository.findById(anyLong())).thenReturn(Optional.of(privilegeCode));
-        when(rateProductRepository.findById(anyLong())).thenReturn(Optional.of(rateProduct));
+        when(privilegeCodeRepository.findByCode(anyString())).thenReturn(Optional.of(privilegeCode));
+        when(rateProductRepository.findByProduct(anyString())).thenReturn(Optional.of(rateProduct));
         when(corporateContractRepository.save(any(CorporateContract.class))).thenReturn(corporateContract);
 
         CorporateContract result = corporateContractService.updateCorporateContract(1L, corporateContract);

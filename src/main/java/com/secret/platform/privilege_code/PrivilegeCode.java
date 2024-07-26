@@ -1,5 +1,6 @@
 package com.secret.platform.privilege_code;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.secret.platform.corporate_contract.CorporateContract;
 import com.secret.platform.option_set.OptionSet;
 import jakarta.persistence.*;
@@ -19,7 +20,11 @@ public class PrivilegeCode {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+
+
+    @Column(unique = true)
     private String code;
+
     private String description;
 
     private Double uniquePrice;
@@ -34,7 +39,11 @@ public class PrivilegeCode {
     private Boolean applyOptionAutomatically;
     private Double uniqueRentalRate;
 
+    private Boolean premiumAccount;
+
+
     @ManyToMany(mappedBy = "privilegeCodes")
+    @JsonIgnore
     private List<CorporateContract> corporateContracts;
 
     @ManyToOne

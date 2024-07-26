@@ -59,19 +59,19 @@ public class CorporateContractService {
     }
 
     private void validateAndSetRelationships(CorporateContract corporateContract) {
-        // Validate and set PrivilegeCodes
+        // Validate and set PrivilegeCodes by code
         if (corporateContract.getPrivilegeCodes() != null) {
             List<PrivilegeCode> validPrivilegeCodes = corporateContract.getPrivilegeCodes().stream()
-                    .map(pc -> privilegeCodeRepository.findById(pc.getId())
-                            .orElseThrow(() -> new ResourceNotFoundException("PrivilegeCode not found with id " + pc.getId())))
+                    .map(pc -> privilegeCodeRepository.findByCode(pc.getCode())
+                            .orElseThrow(() -> new ResourceNotFoundException("PrivilegeCode not found with code " + pc.getCode())))
                     .collect(Collectors.toList());
             corporateContract.setPrivilegeCodes(validPrivilegeCodes);
         }
 
-        // Validate and set RateProduct
-        if (corporateContract.getRateProduct() != null && corporateContract.getRateProduct().getId() != null) {
-            RateProduct rateProduct = rateProductRepository.findById(corporateContract.getRateProduct().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("RateProduct not found with id " + corporateContract.getRateProduct().getId()));
+        // Validate and set RateProduct by code
+        if (corporateContract.getRateProduct() != null && corporateContract.getRateProduct().getProduct() != null) {
+            RateProduct rateProduct = rateProductRepository.findByProduct(corporateContract.getRateProduct().getProduct())
+                    .orElseThrow(() -> new ResourceNotFoundException("RateProduct not found with code " + corporateContract.getRateProduct().getProduct()));
             corporateContract.setRateProduct(rateProduct);
         }
     }
