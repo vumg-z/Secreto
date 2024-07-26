@@ -84,9 +84,9 @@ public class Location {
     @JsonProperty("dispatch_control")
     private String dispatchControl = "N";
 
-    @ManyToOne
-    @JoinColumn(name = "inter_ofc_ar_acct_id")
-    private GeneralLedger interOfcArAcct;
+    //@ManyToOne
+    //@JoinColumn(name = "inter_ofc_ar_acct_id", nullable = true)
+    //private GeneralLedger interOfcArAcct;
 
     @ManyToOne
     @JoinColumn(name = "metroplex_location_id")
@@ -386,7 +386,7 @@ public class Location {
                 ", checkOutFuel='" + checkOutFuel + '\'' +
                 ", region='" + region + '\'' +
                 ", dispatchControl='" + dispatchControl + '\'' +
-                ", interOfcArAcct='" + interOfcArAcct + '\'' +
+                // ", interOfcArAcct='" + interOfcArAcct + '\'' +
                 ", metroplexLocation='" + metroplexLocation + '\'' +
                 '}';
     }

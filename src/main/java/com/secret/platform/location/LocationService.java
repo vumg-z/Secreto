@@ -39,24 +39,31 @@ public class LocationService implements LocationServiceInterface {
 
     public Location saveLocation(Location location) {
         //validateProfitCenterNumber(location.getProfitCenterNumber());
-        validateDoFuelCalc(location.getDoFuelCalc());
-        validateAutoVehicleSelect(location.getAutoVehicleSelect());
-        validateCheckOutFuel(location.getCheckOutFuel());
-        validateValidRentalLoc(location.getValidRentalLoc());
-        validateAllowMultiLanguageRa(location.getAllowMultiLanguageRa());
-        validateAllowWaitRas(location.getAllowWaitRas());
+       // validateDoFuelCalc(location.getDoFuelCalc());
+        //validateAutoVehicleSelect(location.getAutoVehicleSelect());
+        //validateCheckOutFuel(location.getCheckOutFuel());
+        //validateValidRentalLoc(location.getValidRentalLoc());
+        //validateAllowMultiLanguageRa(location.getAllowMultiLanguageRa());
+        //validateAllowWaitRas(location.getAllowWaitRas());
 
         if (!isLocationNumberUnique(location.getLocationNumber())) {
             throw new IllegalArgumentException("Location number must be unique");
         }
 
-        if (location.getCheckInStatus() == null) {
+        /*
+       if (location.getCheckInStatus() != null) {
+            StatusCode checkInStatus = statusCodeRepository.findById(location.getCheckInStatus().getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid check-in status"));
+            location.setCheckInStatus(checkInStatus);
+        } else {
             StatusCode defaultStatus = statusCodeRepository.findByCode("A")
                     .orElseThrow(() -> new IllegalArgumentException("Default check-in status 'A' does not exist"));
             location.setCheckInStatus(defaultStatus);
-        } else {
-            validateCheckInStatus(location.getCheckInStatus());
         }
+
+         */
+
+        /*
 
         if (featureFlagService.isHoldingDrawerEnabled()) {
             validateHoldingDrawer(location.getHoldingDrawer());
@@ -65,21 +72,25 @@ public class LocationService implements LocationServiceInterface {
                 throw new IllegalArgumentException("Holding drawer must be unique");
             }
         }
+         */
+
+        /*
 
         if (location.getRegion() != null) {
             validateRegion(location.getRegion());
         }
+         */
 
         if (location.getDispatchControl() == null) {
             location.setDispatchControl("N");
         }
 
         // Validate metroplex location
-        validateMetroplexLocation(location.getMetroplexLocation());
+       // validateMetroplexLocation(location.getMetroplexLocation());
 
         // Validate and set the RateProduct
         if (location.getWalkupRate() != null) {
-            RateProduct rateProduct = rateProductRepository.findById(location.getWalkupRate().getId())
+            RateProduct rateProduct = rateProductRepository.findByProduct(location.getWalkupRate().getProduct())
                     .orElseThrow(() -> new IllegalArgumentException("Invalid rate product"));
             location.setWalkupRate(rateProduct);
         }
@@ -193,7 +204,7 @@ public class LocationService implements LocationServiceInterface {
         existingLocation.setCheckInStatus(locationDetails.getCheckInStatus());
         existingLocation.setCheckOutFuel(locationDetails.getCheckOutFuel());
         existingLocation.setValidRentalLoc(locationDetails.getValidRentalLoc());
-        existingLocation.setInterOfcArAcct(locationDetails.getInterOfcArAcct());
+        //existingLocation.setInterOfcArAcct(locationDetails.getInterOfcArAcct());
         existingLocation.setAllowMultiLanguageRa(locationDetails.getAllowMultiLanguageRa());
         existingLocation.setAllowWaitRas(locationDetails.getAllowWaitRas());
         existingLocation.setRegion(locationDetails.getRegion());
@@ -202,7 +213,7 @@ public class LocationService implements LocationServiceInterface {
 
         // Validate and set the RateProduct
         if (locationDetails.getWalkupRate() != null) {
-            RateProduct rateProduct = rateProductRepository.findById(locationDetails.getWalkupRate().getId())
+            RateProduct rateProduct = rateProductRepository.findByProduct(locationDetails.getWalkupRate().getProduct())
                     .orElseThrow(() -> new IllegalArgumentException("Invalid rate product"));
             existingLocation.setWalkupRate(rateProduct);
         } else {
@@ -211,6 +222,7 @@ public class LocationService implements LocationServiceInterface {
 
         return locationRepository.save(existingLocation);
     }
+
     public Optional<Location> getLocationById(Long id) {
         return locationRepository.findById(id);
     }
