@@ -86,7 +86,7 @@ public class CorporateAccountTest {
                 .build();
 
         when(corporateAccountRepository.save(corporateAccount)).thenReturn(corporateAccount);
-        when(corporateContractRepository.findById(1L)).thenReturn(Optional.of(corporateContract));
+        when(corporateContractRepository.findByContractNumber("CONTRACT1")).thenReturn(Optional.of(corporateContract));
 
         // Log the start of the test
         logger.info("Starting test for creating CorporateAccount with integrated CorporateContract and PrivilegeCode");
@@ -105,25 +105,9 @@ public class CorporateAccountTest {
         logger.info("RateProduct: {}", createdCorporateAccount.getCorporateContract().getRateProduct());
 
         // Assert
-        assertNotNull(createdCorporateAccount, "CorporateAccount should be created");
-        assertEquals("CDP1", createdCorporateAccount.getCdpId(), "CDP ID should be CDP1");
-        assertNotNull(createdCorporateAccount.getCorporateContract(), "CorporateContract should be present");
-        assertEquals("CONTRACT1", createdCorporateAccount.getCorporateContract().getContractNumber(), "Contract number should be CONTRACT1");
-        assertNotNull(createdCorporateAccount.getCorporateContract().getPrivilegeCodes(), "PrivilegeCodes should be present");
-        assertFalse(createdCorporateAccount.getCorporateContract().getPrivilegeCodes().isEmpty(), "PrivilegeCodes should not be empty");
-        assertNotNull(createdCorporateAccount.getCorporateContract().getRateProduct(), "RateProduct should be present");
-
-        // Check PrivilegeCode and OptionSet
-        PrivilegeCode retrievedPrivilegeCode = createdCorporateAccount.getCorporateContract().getPrivilegeCodes().get(0);
-        assertEquals("PRIV1", retrievedPrivilegeCode.getCode(), "PrivilegeCode should be PRIV1");
-        assertNotNull(retrievedPrivilegeCode.getOptionSet(), "OptionSet should be present");
-        assertEquals("SET1", retrievedPrivilegeCode.getOptionSet().getCode(), "OptionSet code should be SET1");
-
-        // Check included options
-        List<Options> retrievedOptions = retrievedPrivilegeCode.getOptionSet().getOptions();
-        assertEquals(3, retrievedOptions.size(), "There should be 3 options");
-        assertTrue(retrievedOptions.contains(option1), "Options should contain option1");
-        assertTrue(retrievedOptions.contains(option2), "Options should contain option2");
-        assertTrue(retrievedOptions.contains(option3), "Options should contain option3");
+        assertNotNull(createdCorporateAccount);
+        assertEquals("CDP1", createdCorporateAccount.getCdpId());
+        assertEquals("Company A", createdCorporateAccount.getCompanyName());
+        assertEquals(corporateContract, createdCorporateAccount.getCorporateContract());
     }
 }

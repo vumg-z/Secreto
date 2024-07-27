@@ -1,5 +1,6 @@
 package com.secret.platform.rate_product;
 
+import com.secret.platform.class_code.ClassCode;
 import com.secret.platform.class_code.ClassCodeRepository;
 import com.secret.platform.option_set.OptionSet;
 import com.secret.platform.option_set.OptionSetRepository;
@@ -12,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Optional;
@@ -34,6 +36,7 @@ class RateProductAuditFieldsTest {
 
     @Mock
     private OptionSetRepository optionSetRepository;
+
     @Mock
     private ClassCodeRepository classCodeRepository;
 
@@ -46,7 +49,6 @@ class RateProductAuditFieldsTest {
 
         existingRateProduct = RateProduct.builder()
                 .id(1L)
-                //.rateSet("Old Rate Set")
                 .product("Old Product")
                 .effPkupDate(new Date())
                 .effPkupTime("10:00")
@@ -78,10 +80,10 @@ class RateProductAuditFieldsTest {
                 .modTime(1000.0f)
                 .modEmpl("OldUser")
                 .empl("User")
+                .includedOptions(new ArrayList<>()) // Initialize includedOptions
                 .build();
 
         rateProductDetails = RateProduct.builder()
-                //.rateSet("New Rate Set")
                 .product("New Product")
                 .effPkupDate(new Date())
                 .effPkupTime("12:00")
@@ -110,6 +112,7 @@ class RateProductAuditFieldsTest {
                 .currency("EUR")
                 .paidFreeDay("5/1")
                 .empl("NewUser")
+                .includedOptions(new ArrayList<>()) // Initialize includedOptions
                 .build();
     }
 

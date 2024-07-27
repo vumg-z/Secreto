@@ -4,6 +4,7 @@ import com.secret.platform.class_code.ClassCode;
 import com.secret.platform.class_code.ClassCodeRepository;
 import com.secret.platform.corporate_account.CorporateAccountRepository;
 import com.secret.platform.corporate_contract.CorporateContractRepository;
+import com.secret.platform.exception.CorporateRateNotFoundException;
 import com.secret.platform.rate_product.RateProductRepository;
 import com.secret.platform.res_rates.ResRatesDTO;
 import com.secret.platform.res_rates.ResRatesResponseDTO;
@@ -40,7 +41,7 @@ public class ResRatesService implements ResRatesServiceInterface {
         // Retrieve the CorporateAccount using the CorpRateID
         String corpRateID = resRatesDTO.getCorpRateID();
         CorporateAccount corporateAccount = corporateAccountRepository.findByCdpId(corpRateID)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid Corporate Rate ID"));
+                .orElseThrow(() -> new CorporateRateNotFoundException(corpRateID));
 
         // Get the CorporateContract linked to the CorporateAccount
         CorporateContract corporateContract = corporateAccount.getCorporateContract();

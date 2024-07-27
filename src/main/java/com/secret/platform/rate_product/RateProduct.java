@@ -1,5 +1,7 @@
 package com.secret.platform.rate_product;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.secret.platform.class_code.ClassCode;
 import com.secret.platform.option_set.OptionSet;
 import com.secret.platform.options.Options;
@@ -26,7 +28,14 @@ public class RateProduct {
 
     @ManyToOne
     @JoinColumn(name = "rate_set_id")
+    @JsonBackReference
     private RateSet rateSet;
+
+    @Transient // This field will not be persisted in the database
+    @JsonProperty("rateSetCode")
+    public String getRateSetCode() {
+        return rateSet != null ? rateSet.getRateSetCode() : null;
+    }
 
     private String product;
 
@@ -79,11 +88,11 @@ public class RateProduct {
     private Boolean inclCvg4;
 
     // Page 1 fields
-    private Float unused;
-    private Float milesMeth;
-    private Float week;
-    private Float extraWeek;
-    private Float freeMilesHour;
+    private Float unused = 0.0f;
+    private Float milesMeth = 0.0f;
+    private Float week = 0.0f;
+    private Float extraWeek = 0.0f;
+    private Float freeMilesHour = 0.0f;
 
 
     /*
@@ -242,7 +251,10 @@ public class RateProduct {
     @JoinColumn(name = "incl_opt_set_id")
     private OptionSet inclOptSet;
 
+    @ManyToOne
+    @JoinColumn(name = "addon_opt_set_id")
     private OptionSet addonOptSet;
+
 
     /*
      * Class Codes associated with this Rate Product.
@@ -268,7 +280,8 @@ public class RateProduct {
 
 
     private Boolean fpoIncMan;
-    private Float oneWayMiles;
+    private Float oneWayMiles = 0.0f;
+
     private String altRate1;
 
     /*
@@ -307,13 +320,13 @@ public class RateProduct {
 
     private Boolean statusFlag;
 
-    private Float hoursPct;
-    private Float yieldPcts;
-    private Float tierPcts;
+    private Float hoursPct = 0.0f;
+    private Float yieldPcts = 0.0f;
+    private Float tierPcts = 0.0f;
     private Boolean allowLocal;
     private String segmentCode;
-    private Float hrsChgToDay;
-    private Float hrsXhrsLogic;
+    private Float hrsChgToDay = 0.0f;
+    private Float hrsXhrsLogic = 0.0f;
     private Boolean milesInIncl;
     private Boolean exemptOptSet;
     private Boolean discOnlyTime;
@@ -408,13 +421,15 @@ public class RateProduct {
     private String endMethod;
     private Boolean earlyLateElbo;
     private Boolean packageRate;
-    private Float wkndRateMaxDays;
+
+    private Float wkndRateMaxDays = 0.0f;
+
     private Boolean wkndOptions;
     private String startDayMtwfss;
     private String startDayChgTo;
-    private Float minDays;
-    private Float maxDays;
-    private Float intercityChgTo;
+    private Float minDays = 0.0f;
+    private Float maxDays = 0.0f;
+    private Float intercityChgTo = 0.0f;
     private Integer drvrMinAge;
     private Boolean allowZeroRates;
     private Boolean vlfExempt;
@@ -428,12 +443,23 @@ public class RateProduct {
     private Boolean resOnly;
     private Integer advanceDays;
     private Boolean dropSchedule;
-    private Float tier1;
-    private Float tier2;
-    private Float tier3;
-    private Float tier4;
-    private Float miles;
-    private Float intercity;
+    private Float tier1 = 0.0f;
+    private Float tier2 = 0.0f;
+    private Float tier3 = 0.0f;
+    private Float tier4 = 0.0f;
+    private Float miles = 0.0f;
+    private Float intercity = 0.0f;
+
+    private Float oneWayRate = 0.0f;
+    private Float tier1KmRate = 0.0f;
+    private Float tier1MRate = 0.0f;
+    private Float tier2KmRate = 0.0f;
+    private Float tier2MRate = 0.0f;
+    private Float tier3KmRate = 0.0f;
+    private Float tier3MRate = 0.0f;
+    private Float tier4KmRate = 0.0f;
+    private Float tier4MRate = 0.0f;
+
 
     // Page 3 fields
     private Boolean tollOptIn;
@@ -442,33 +468,26 @@ public class RateProduct {
     private String discCode;
 
     // Page 4 fields
-    private Float dayRate;
-    private Float weekRate;
-    private Float monthRate;
-    private Float xDayRate;
 
-    private Float hourRate;
-    private Float mileRate;
-    private Float intercityRate;
+    private Float dayRate = 0.0f;
+    private Float weekRate = 0.0f;
+    private Float monthRate = 0.0f;
+    private Float xDayRate = 0.0f;
+
+    private Float hourRate = 0.0f;
+    private Float mileRate = 0.0f;
+    private Float intercityRate = 0.0f;
+
     private String prc;
     private Boolean discount;
 
-    // Page 5 fields
-    private Float oneWayRate;
-    private Float tier1KmRate;
-    private Float tier1MRate;
-    private Float tier2KmRate;
-    private Float tier2MRate;
-    private Float tier3KmRate;
-    private Float tier3MRate;
-    private Float tier4KmRate;
-    private Float tier4MRate;
 
     // Audit fields
     @Temporal(TemporalType.TIMESTAMP)
     private Date modDate;
 
-    private Float modTime;
+    private Float modTime = 0.0f;
+
     private String modEmpl;
     private String empl;
 
@@ -505,7 +524,8 @@ public class RateProduct {
         return editable;
     }
 
-    public double getXDayRate() {
-        return this.xDayRate;
+    public Float getXDayRate() {
+        return xDayRate != null ? xDayRate : 0.0f;
     }
+
 }

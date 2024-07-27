@@ -1,6 +1,9 @@
 package com.secret.platform.options;
 
 import com.secret.platform.exception.ResourceNotFoundException;
+import com.secret.platform.option_set.OptionSet;
+import com.secret.platform.option_set.OptionSetRepository;
+import com.secret.platform.option_set.OptionSetService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +15,14 @@ public class OptionsServiceImpl implements OptionsServiceInterface {
 
     @Autowired
     private OptionsRepository optionsRepository;
+
+    @Autowired
+    private OptionSetRepository optionSetRepository;
+
+    @Autowired
+    private OptionSetService optionSetService;  // Add this
+
+
 
     @Override
     public List<Options> getAllOptions() {
@@ -25,8 +36,15 @@ public class OptionsServiceImpl implements OptionsServiceInterface {
 
     @Override
     public Options createOption(Options option) {
-        return optionsRepository.save(option);
+        Options savedOption = optionsRepository.save(option);
+        if (option.getOptSetCode() != null) {
+            OptionSet optionSet = optionSetService.findOrCreateOptionSetByCode(option.getOptSetCode());
+            optionSet.getOptions().add(savedOption);
+            optionSetRepository.save(optionSet);
+        }
+        return savedOption;
     }
+
 
     @Override
     public Options updateOption(Long id, Options optionDetails) {
@@ -64,7 +82,6 @@ public class OptionsServiceImpl implements OptionsServiceInterface {
 
         return optionsRepository.save(option);
     }
-
     @Override
     public void deleteOption(Long id) {
         Options option = optionsRepository.findById(id)
@@ -77,5 +94,17 @@ public class OptionsServiceImpl implements OptionsServiceInterface {
     public Options findByOptionCode(String optionCode) {
         return optionsRepository.findByOptionCode(optionCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Option not found for this option code :: " + optionCode));
+    }
+
+    public void deleteOptionByCode(String optionCode) {
+        Options option = optionsRepository.findByOptionCode(optionCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Option not found for this option code :: " + optionCode));
+
+        optionsRepository.delete(option);
+    }
+
+    @Override
+    public List<Options> findByOptSetCode(String optSetCode) {
+        return optionsRepository.findByOptSetCode(optSetCode);
     }
 }

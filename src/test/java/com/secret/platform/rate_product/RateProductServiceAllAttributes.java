@@ -4,8 +4,8 @@ import com.secret.platform.option_set.OptionSet;
 import com.secret.platform.option_set.OptionSetRepository;
 import com.secret.platform.options.Options;
 import com.secret.platform.options.OptionsServiceImpl;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
+import com.secret.platform.rate_set.RateSet;
+import com.secret.platform.rate_set.RateSetRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -19,7 +19,6 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 class RateProductServiceAllAttributesTest {
@@ -37,6 +36,9 @@ class RateProductServiceAllAttributesTest {
     @Mock
     private OptionSetRepository optionSetRepository;
 
+    @Mock
+    private RateSetRepository rateSetRepository;
+
     private RateProduct rateProduct;
     private Options cvg1Option;
     private Options taxOption;
@@ -44,14 +46,21 @@ class RateProductServiceAllAttributesTest {
     private Options locnOption;
 
     private OptionSet optionSet;
+    private RateSet rateSet;
+
+    // Define coverage codes in the test class
+    private static final String CVG1_CODE = "LDW";
+    private static final String CVG2_CODE = "PAI";
+    private static final String CVG3_CODE = "XYZ";
+    private static final String CVG4_CODE = "ABC";
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
         cvg1Option = Options.builder()
-                .optionCode("CVG1")
-                .shortDesc("LDW")
+                .optionCode(CVG1_CODE)
+                .shortDesc("Loss Damage Waiver")
                 .longDesc("Loss Damage Waiver")
                 .build();
 
@@ -81,8 +90,14 @@ class RateProductServiceAllAttributesTest {
                 .options(Arrays.asList(taxOption, lrfOption, locnOption))
                 .build();
 
+        rateSet = RateSet.builder()
+                .id(1L)
+                .rateSetCode("Standard Rate Set")
+                .description("Standard Rate Set Description")
+                .build();
+
         rateProduct = RateProduct.builder()
-                //.rateSet("Standard Rate Set")
+                .rateSet(rateSet)
                 .product("Standard Product")
                 .effPkupDate(new Date())
                 .effPkupTime("12:00")
@@ -124,7 +139,26 @@ class RateProductServiceAllAttributesTest {
         coverages.put("CVG1", true);
         coverages.put("CVG2", false);
 
-        when(optionSetRepository.findById(any(Long.class))).thenReturn(Optional.of(optionSet));
+        when(optionSetRepository.findByCode(any(String.class))).thenReturn(Optional.of(optionSet));
+        when(rateSetRepository.findByRateSetCode(any(String.class))).thenReturn(Optional.of(rateSet));
+        when(rateProductRepository.save(any(RateProduct.class))).thenReturn(rateProduct);
+
+        RateProduct result = rateProductService.createRateProduct(rateProduct, coverages);
+
+        assertNotNull(result);
+        assertEquals(optionSet, result.getInclOptSet());
+        assertTrue(result.getIncludedOptions().containsAll(optionSet.getOptions()), "Included options do not contain all options from the option set.");
+    }
+
+    @Test
+    void testCreateRateProduct_WithNewInclOptSet() {
+        Map<String, Boolean> coverages = new HashMap<>();
+        coverages.put("CVG1", true);
+        coverages.put("CVG2", false);
+
+        when(optionSetRepository.findByCode(any(String.class))).thenReturn(Optional.empty());
+        when(optionSetRepository.save(any(OptionSet.class))).thenReturn(optionSet);
+        when(rateSetRepository.findByRateSetCode(any(String.class))).thenReturn(Optional.of(rateSet));
         when(rateProductRepository.save(any(RateProduct.class))).thenReturn(rateProduct);
 
         RateProduct result = rateProductService.createRateProduct(rateProduct, coverages);
@@ -144,7 +178,8 @@ class RateProductServiceAllAttributesTest {
 
         when(optionsService.findByOptionCode("TAX")).thenReturn(taxOption);
         when(optionsService.findByOptionCode("LRF")).thenReturn(lrfOption);
-        when(optionSetRepository.findById(anyLong())).thenReturn(Optional.of(optionSet));
+        when(optionSetRepository.findByCode(any(String.class))).thenReturn(Optional.of(optionSet));
+        when(rateSetRepository.findByRateSetCode(any(String.class))).thenReturn(Optional.of(rateSet));
         when(rateProductRepository.save(any(RateProduct.class))).thenReturn(rateProduct);
 
         logger.info("Creating RateProduct with coverages: {}", coverages);
@@ -169,14 +204,15 @@ class RateProductServiceAllAttributesTest {
         coverages.put("CVG2", false);
 
         logger.info("Mocking responses for optionsService.");
-        when(optionsService.findByOptionCode("CVG1")).thenReturn(cvg1Option);
+        when(optionsService.findByOptionCode(CVG1_CODE)).thenReturn(cvg1Option); // LDW corresponds to CVG1
+        when(rateSetRepository.findByRateSetCode(any(String.class))).thenReturn(Optional.of(rateSet));
 
         logger.info("Creating RateProduct with coverages: {}", coverages);
 
-        Method method = RateProductServiceImpl.class.getDeclaredMethod("updateIncludedOptions", RateProduct.class, Map.class, Set.class);
+        Method method = RateProductServiceImpl.class.getDeclaredMethod("updateIncludedOptions", Map.class, Set.class);
         method.setAccessible(true);
         Set<Options> includedOptionsSet = new HashSet<>(rateProduct.getIncludedOptions());
-        method.invoke(rateProductService, rateProduct, coverages, includedOptionsSet);
+        method.invoke(rateProductService, coverages, includedOptionsSet);
 
         rateProduct.setIncludedOptions(new ArrayList<>(includedOptionsSet));
 
@@ -201,9 +237,10 @@ class RateProductServiceAllAttributesTest {
         coverages.put("TAX", true);
 
         // Mocking responses
-        when(optionsService.findByOptionCode("CVG1")).thenReturn(cvg1Option);
+        when(optionsService.findByOptionCode(CVG1_CODE)).thenReturn(cvg1Option); // LDW corresponds to CVG1
         when(optionsService.findByOptionCode("TAX")).thenReturn(taxOption);
-        when(optionSetRepository.findById(anyLong())).thenReturn(Optional.of(optionSet));
+        when(optionSetRepository.findByCode(any(String.class))).thenReturn(Optional.of(optionSet));
+        when(rateSetRepository.findByRateSetCode(any(String.class))).thenReturn(Optional.of(rateSet));
         when(rateProductRepository.save(any(RateProduct.class))).thenReturn(rateProduct);
 
         // Act
@@ -215,15 +252,16 @@ class RateProductServiceAllAttributesTest {
 
         logger.info("Final included options in RateProduct: {}", createdRateProduct.getIncludedOptions());
         assertNotNull(createdRateProduct);
-        assertTrue(createdRateProduct.getIncludedOptions().contains(cvg1Option));
-        assertTrue(createdRateProduct.getIncludedOptions().contains(taxOption));
-        assertTrue(createdRateProduct.getIncludedOptions().containsAll(optionSet.getOptions()));
+        assertTrue(createdRateProduct.getIncludedOptions().contains(cvg1Option), "Included options do not contain CVG1 option.");
+        assertTrue(createdRateProduct.getIncludedOptions().contains(taxOption), "Included options do not contain TAX option.");
+        assertTrue(createdRateProduct.getIncludedOptions().containsAll(optionSet.getOptions()), "Included options do not contain all options from the option set.");
     }
 
     @Test
     void testCreateRateProductAuditFields() {
         when(rateProductRepository.save(any(RateProduct.class))).thenReturn(rateProduct);
-        when(optionSetRepository.findById(any(Long.class))).thenReturn(Optional.of(optionSet));
+        when(optionSetRepository.findByCode(any(String.class))).thenReturn(Optional.of(optionSet));
+        when(rateSetRepository.findByRateSetCode(any(String.class))).thenReturn(Optional.of(rateSet));
 
         Map<String, Boolean> coverages = new HashMap<>();
         coverages.put("CVG1", true);
@@ -236,8 +274,4 @@ class RateProductServiceAllAttributesTest {
         assertEquals("EMP123", createdProduct.getModEmpl());
         assertEquals("EMP456", createdProduct.getEmpl());
     }
-
-
 }
-
-

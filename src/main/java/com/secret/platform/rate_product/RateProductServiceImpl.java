@@ -1,6 +1,7 @@
 package com.secret.platform.rate_product;
 
 import com.secret.platform.class_code.ClassCode;
+import com.secret.platform.class_code.ClassCodeDTO;
 import com.secret.platform.class_code.ClassCodeRepository;
 import com.secret.platform.exception.ResourceNotFoundException;
 import com.secret.platform.location.Location;
@@ -10,10 +11,13 @@ import com.secret.platform.options.Options;
 import com.secret.platform.options.OptionsServiceImpl;
 import com.secret.platform.rate_set.RateSet;
 import com.secret.platform.rate_set.RateSetRepository;
+import com.secret.platform.type_code.ValidTypeCode;
+import com.secret.platform.type_code.ValidTypeCodeRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -37,6 +41,15 @@ public class RateProductServiceImpl implements RateProductService {
     @Autowired
     private RateSetRepository rateSetRepository;
 
+    @Autowired
+    private ValidTypeCodeRepository validTypeCodeRepository;
+
+    // coverage codes
+    private static final String CVG1_CODE = "LDW";
+    private static final String CVG2_CODE = "PAI";
+    private static final String CVG3_CODE = "XYZ";
+    private static final String CVG4_CODE = "ABC";
+
     @Override
     public List<RateProduct> getAllRateProducts() {
         return rateProductRepository.findAll();
@@ -48,22 +61,38 @@ public class RateProductServiceImpl implements RateProductService {
     }
 
     @Override
+    @Transactional
     public RateProduct createRateProduct(RateProduct rateProduct, Map<String, Boolean> coverages) {
         logger.debug("Creating RateProduct with coverages: {}", coverages);
 
-        Set<Options> includedOptionsSet = new HashSet<>();
+        // Find or create RateSet by rateSetCode
+        RateSet rateSet = findOrCreateRateSet(rateProduct.getRateSet().getRateSetCode());
+        rateProduct.setRateSet(rateSet);
 
-        updateIncludedOptions(rateProduct, coverages, includedOptionsSet);
+        // Find or create OptionSet by code
+        OptionSet inclOptSet = findOrCreateOptionSet(rateProduct.getInclOptSet().getCode());
+        rateProduct.setInclOptSet(inclOptSet);
+
+        // Process coverages
+        processCoverages(rateProduct, coverages);
+
+        Set<Options> includedOptionsSet = new HashSet<>(rateProduct.getIncludedOptions());
+        updateIncludedOptions(coverages, includedOptionsSet);
 
         if (rateProduct.getInclOptSet() != null) {
-            logger.debug("Fetching OptionSet with ID: {}", rateProduct.getInclOptSet().getId());
-            OptionSet inclOptionSet = optionSetRepository.findById(rateProduct.getInclOptSet().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("OptionSet not found for this id :: " + rateProduct.getInclOptSet().getId()));
-            logger.debug("Adding options from OptionSet to RateProduct: {}", inclOptionSet.getOptions());
-            includedOptionsSet.addAll(inclOptionSet.getOptions());
+            logger.debug("Fetching OptionSet with code: {}", rateProduct.getInclOptSet().getCode());
+            logger.debug("Adding options from OptionSet to RateProduct: {}", inclOptSet.getOptions());
+            includedOptionsSet.addAll(inclOptSet.getOptions());
         }
 
         rateProduct.setIncludedOptions(new ArrayList<>(includedOptionsSet));
+
+        // Attach ValidTypeCode if defltRaType is provided
+        if (rateProduct.getDefltRaType() != null) {
+            ValidTypeCode validTypeCode = validTypeCodeRepository.findByTypeCode(rateProduct.getDefltRaType().getTypeCode())
+                    .orElseThrow(() -> new ResourceNotFoundException("ValidTypeCode not found for code: " + rateProduct.getDefltRaType().getTypeCode()));
+            rateProduct.setDefltRaType(validTypeCode);
+        }
 
         logger.debug("Final included options before saving: {}", rateProduct.getIncludedOptions());
         RateProduct savedRateProduct = rateProductRepository.save(rateProduct);
@@ -71,12 +100,60 @@ public class RateProductServiceImpl implements RateProductService {
         return savedRateProduct;
     }
 
+    private RateSet findOrCreateRateSet(String rateSetCode) {
+        return rateSetRepository.findByRateSetCode(rateSetCode).orElseGet(() -> {
+            RateSet newRateSet = new RateSet();
+            newRateSet.setRateSetCode(rateSetCode);
+            newRateSet.setDescription("Default description"); // Set a default or appropriate description
+            return rateSetRepository.save(newRateSet);
+        });
+    }
+
+    private OptionSet findOrCreateOptionSet(String code) {
+        return optionSetRepository.findByCode(code).orElseGet(() -> {
+            OptionSet newOptionSet = new OptionSet();
+            newOptionSet.setCode(code);
+            newOptionSet.setEffDate(new Date()); // Set default effective date
+            newOptionSet.setTermDate(new Date()); // Set default termination date
+            return optionSetRepository.save(newOptionSet);
+        });
+    }
+
     @Override
+    @Transactional
     public RateProduct updateRateProduct(Long id, RateProduct rateProductDetails, Map<String, Boolean> coverages) throws IllegalAccessException {
         RateProduct existingRateProduct = rateProductRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("RateProduct not found for this id :: " + id));
 
-        // Set all fields from rateProductDetails to existingRateProduct
+        setRateProductDetails(existingRateProduct, rateProductDetails);
+
+        // Process coverages
+        processCoverages(existingRateProduct, coverages);
+
+        Set<Options> includedOptionsSet = new HashSet<>(existingRateProduct.getIncludedOptions());
+        updateIncludedOptions(coverages, includedOptionsSet);
+        existingRateProduct.setIncludedOptions(new ArrayList<>(includedOptionsSet));
+
+        // Attach ValidTypeCode if defltRaType is provided
+        if (rateProductDetails.getDefltRaType() != null) {
+            ValidTypeCode validTypeCode = validTypeCodeRepository.findByTypeCode(rateProductDetails.getDefltRaType().getTypeCode())
+                    .orElseThrow(() -> new ResourceNotFoundException("ValidTypeCode not found for code: " + rateProductDetails.getDefltRaType().getTypeCode()));
+            existingRateProduct.setDefltRaType(validTypeCode);
+        }
+
+        // Load all class codes for the default location
+        Location defaultLocation = new Location();
+        defaultLocation.setLocationNumber("DEFAULT");
+        List<ClassCode> classCodes = classCodeRepository.findAllByLocation(defaultLocation);
+        existingRateProduct.setClassCodes(classCodes);
+
+        // Save the updated rate product
+        RateProduct updatedRateProduct = rateProductRepository.save(existingRateProduct);
+        logger.debug("Updated RateProduct: {}", updatedRateProduct);
+        return updatedRateProduct;
+    }
+
+    private void setRateProductDetails(RateProduct existingRateProduct, RateProduct rateProductDetails) {
         existingRateProduct.setRateSet(rateProductDetails.getRateSet());
         existingRateProduct.setProduct(rateProductDetails.getProduct());
         existingRateProduct.setEffPkupDate(rateProductDetails.getEffPkupDate());
@@ -115,53 +192,70 @@ public class RateProductServiceImpl implements RateProductService {
         existingRateProduct.setModTime(new Date().getTime() / 1000.0f);
         existingRateProduct.setModEmpl("MOD_USER");
         existingRateProduct.setEmpl(rateProductDetails.getEmpl());
-
-        // Update included options based on coverages
-        Set<Options> includedOptionsSet = new HashSet<>();
-        for (Map.Entry<String, Boolean> entry : coverages.entrySet()) {
-            if (entry.getValue() != null && entry.getValue()) {
-                Options option = optionsService.findByOptionCode(entry.getKey());
-                if (option != null) {
-                    includedOptionsSet.add(option);
-                }
-            }
-        }
-        existingRateProduct.setIncludedOptions(new ArrayList<>(includedOptionsSet));
-
-        // Load all class codes for the default location
-        Location defaultLocation = new Location();
-        defaultLocation.setLocationNumber("DEFAULT");
-        List<ClassCode> classCodes = classCodeRepository.findAllByLocation(defaultLocation);
-        existingRateProduct.setClassCodes(classCodes);
-
-        // Save the updated rate product
-        RateProduct updatedRateProduct = rateProductRepository.save(existingRateProduct);
-        return updatedRateProduct;
     }
 
     @Override
+    @Transactional
     public void deleteRateProduct(Long id) {
         rateProductRepository.deleteById(id);
     }
 
-    private void updateIncludedOptions(RateProduct rateProduct, Map<String, Boolean> coverages, Set<Options> includedOptionsSet) {
-        logger.debug("Updating included options for RateProduct with coverages: {}", coverages);
+    private void processCoverages(RateProduct rateProduct, Map<String, Boolean> coverages) {
+        // Process each coverage
+        rateProduct.setInclCvg1(coverages.getOrDefault("CVG1", false));
+        rateProduct.setInclCvg2(coverages.getOrDefault("CVG2", false));
+        rateProduct.setInclCvg3(coverages.getOrDefault("CVG3", false));
+        rateProduct.setInclCvg4(coverages.getOrDefault("CVG4", false));
+
+        // Add corresponding coverage products to included options
+        Set<Options> includedOptionsSet = new HashSet<>(rateProduct.getIncludedOptions());
+        if (rateProduct.getInclCvg1()) {
+            includedOptionsSet.add(optionsService.findByOptionCode(CVG1_CODE));
+        }
+        if (rateProduct.getInclCvg2()) {
+            includedOptionsSet.add(optionsService.findByOptionCode(CVG2_CODE));
+        }
+        if (rateProduct.getInclCvg3()) {
+            includedOptionsSet.add(optionsService.findByOptionCode(CVG3_CODE));
+        }
+        if (rateProduct.getInclCvg4()) {
+            includedOptionsSet.add(optionsService.findByOptionCode(CVG4_CODE));
+        }
+
+        rateProduct.setIncludedOptions(new ArrayList<>(includedOptionsSet));
+    }
+
+    private void updateIncludedOptions(Map<String, Boolean> coverages, Set<Options> includedOptionsSet) {
+        logger.debug("Updating included options with coverages: {}", coverages);
 
         for (Map.Entry<String, Boolean> entry : coverages.entrySet()) {
             if (entry.getValue() != null && entry.getValue()) {
-                Options option = optionsService.findByOptionCode(entry.getKey());
+                Options option = optionsService.findByOptionCode(getOptionCode(entry.getKey()));
                 if (option != null) {
                     logger.debug("Adding option to included options: {}", option);
                     includedOptionsSet.add(option);
                 }
             }
         }
-        logger.debug("Final included options for RateProduct after coverages: {}", includedOptionsSet);
+        logger.debug("Final included options after coverages: {}", includedOptionsSet);
     }
 
+    private String getOptionCode(String coverageKey) {
+        switch (coverageKey) {
+            case "CVG1":
+                return CVG1_CODE;
+            case "CVG2":
+                return CVG2_CODE;
+            case "CVG3":
+                return CVG3_CODE;
+            case "CVG4":
+                return CVG4_CODE;
+            default:
+                return coverageKey;
+        }
+    }
 
-
-
+    @Override
     public List<ClassCode> getAllClassesWithRatesByLocation(Location location) {
         List<ClassCode> classCodes = classCodeRepository.findAllByLocation(location);
         for (ClassCode classCode : classCodes) {
@@ -179,5 +273,33 @@ public class RateProductServiceImpl implements RateProductService {
         return classCodes;
     }
 
-}
+    @Override
+    public RateProduct addClassesToRateProduct(List<ClassCodeDTO> classCodeDTOs) {
+        if (classCodeDTOs.isEmpty()) {
+            throw new IllegalArgumentException("Class code list cannot be empty.");
+        }
 
+        // Get the RateProduct using the rateProductNumber from the first DTO (assuming all have the same rateProductNumber)
+        String rateProductNumber = classCodeDTOs.get(0).getRateProductNumber();
+        RateProduct rateProduct = rateProductRepository.findByProduct(rateProductNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("RateProduct not found with product number " + rateProductNumber));
+
+        for (ClassCodeDTO classCodeDTO : classCodeDTOs) {
+            ClassCode classCode = classCodeRepository.findByClassCode(classCodeDTO.getClassCode())
+                    .orElseThrow(() -> new ResourceNotFoundException("ClassCode not found with class code " + classCodeDTO.getClassCode()));
+
+            classCode.setRateProduct(rateProduct);
+            classCode.setDayRate(classCodeDTO.getDayRate());
+            classCode.setWeekRate(classCodeDTO.getWeekRate());
+            classCode.setMonthRate(classCodeDTO.getMonthRate());
+            classCode.setXDayRate(classCodeDTO.getXDayRate());
+            classCode.setHourRate(classCodeDTO.getHourRate());
+            classCode.setMileRate(classCodeDTO.getMileRate());
+
+            classCodeRepository.save(classCode);
+        }
+
+        rateProduct.getClassCodes().addAll(classCodeRepository.findByRateProduct(rateProduct));
+        return rateProductRepository.save(rateProduct);
+    }
+}

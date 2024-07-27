@@ -11,11 +11,9 @@ import java.util.Optional;
 
 @Repository
 public interface RateProductRepository extends JpaRepository<RateProduct, Long> {
-    Optional<RateProduct> findByDefltRaType(String defltRaType);
-    Optional<RateProduct> findByDefltRaType(ValidTypeCode defltRaType);
 
     List<RateProduct> findAllByRateSet(RateSet rateSet);
 
-    RateProduct findByCorpRateID();
 
+    Optional<RateProduct> findByProduct(String product);
 }

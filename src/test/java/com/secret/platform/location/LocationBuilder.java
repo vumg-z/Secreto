@@ -142,7 +142,7 @@ public class LocationBuilder {
         location.setCheckOutFuel(checkOutFuel);
         location.setRegion(region);
         location.setDispatchControl(dispatchControl);
-        location.setInterOfcArAcct(interOfcArAcct);
+        //location.setInterOfcArAcct(interOfcArAcct);
         location.setMetroplexLocation(metroplexLocation);
         location.setValidRentalLoc(validRentalLoc);
         location.setAllowMultiLanguageRa(allowMultiLanguageRa);
