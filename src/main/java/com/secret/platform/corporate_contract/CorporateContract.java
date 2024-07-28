@@ -54,9 +54,17 @@ public class CorporateContract {
     EXAMPLE: Type AAM2 (RET)
      */
 
-    @ManyToOne
-    @JoinColumn(name = "rate_product_id")
-    private RateProduct rateProduct;
+    @ManyToMany
+    @JoinTable(
+            name = "corporate_contract_rate_products",
+            joinColumns = @JoinColumn(name = "corporate_contract_id"),
+            inverseJoinColumns = @JoinColumn(name = "rate_product_id")
+    )
+    private List<RateProduct> rateProducts;
+
+    private String rateProduct;
+
+
 
     @Column(name = "modified_date")
     private LocalDate modifiedDate;

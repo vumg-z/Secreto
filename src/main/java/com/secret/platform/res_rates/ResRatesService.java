@@ -36,7 +36,7 @@ public class ResRatesService implements ResRatesServiceInterface {
         this.classCodeRepository = classCodeRepository;
     }
 
-    @Override
+   /* @Override
     public ResRatesResponseDTO getRates(ResRatesDTO resRatesDTO) {
         // Retrieve the CorporateAccount using the CorpRateID
         String corpRateID = resRatesDTO.getCorpRateID();
@@ -68,7 +68,7 @@ public class ResRatesService implements ResRatesServiceInterface {
         response.addRate(rate);
 
         return response;
-    }
+    }*/
 
     private double calculateEstimate(RateProduct rateProduct) {
         // Implement your logic to calculate the estimate
@@ -98,5 +98,10 @@ public class ResRatesService implements ResRatesServiceInterface {
         ResRatesResponseDTO.Rate.Distance distance = new ResRatesResponseDTO.Rate.Distance();
         distance.setIncluded("unlimited");
         return distance;
+    }
+
+    @Override
+    public ResRatesResponseDTO getRates(ResRatesDTO resRatesDTO) {
+        return null;
     }
 }

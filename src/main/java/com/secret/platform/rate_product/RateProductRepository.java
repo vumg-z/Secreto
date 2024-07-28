@@ -16,4 +16,6 @@ public interface RateProductRepository extends JpaRepository<RateProduct, Long> 
 
 
     Optional<RateProduct> findByProduct(String product);
+
+    List<RateProduct> findAllByProduct(String rateProductName);
 }

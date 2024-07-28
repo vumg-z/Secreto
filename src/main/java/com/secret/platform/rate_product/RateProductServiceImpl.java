@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class RateProductServiceImpl implements RateProductService {
@@ -49,6 +50,15 @@ public class RateProductServiceImpl implements RateProductService {
     private static final String CVG2_CODE = "PAI";
     private static final String CVG3_CODE = "XYZ";
     private static final String CVG4_CODE = "ABC";
+
+    @Override
+    public List<String> findRateProductByName(String rateProductName) {
+        List<RateProduct> rateProducts = rateProductRepository.findAllByProduct(rateProductName);
+        return rateProducts.stream()
+                .map(RateProduct::getProduct)
+                .distinct()
+                .collect(Collectors.toList());
+    }
 
     @Override
     public List<RateProduct> getAllRateProducts() {

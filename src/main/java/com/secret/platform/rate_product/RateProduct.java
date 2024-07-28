@@ -31,7 +31,7 @@ public class RateProduct {
     @JsonBackReference
     private RateSet rateSet;
 
-    @Transient // This field will not be persisted in the database
+    @Transient
     @JsonProperty("rateSetCode")
     public String getRateSetCode() {
         return rateSet != null ? rateSet.getRateSetCode() : null;

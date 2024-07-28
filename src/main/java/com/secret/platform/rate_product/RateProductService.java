@@ -19,4 +19,6 @@ public interface RateProductService {
 
     RateProduct addClassesToRateProduct(List<ClassCodeDTO> classCodeDTOs);
 
+    List<String> findRateProductByName(String rateProductName);
+
 }
