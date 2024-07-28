@@ -35,7 +35,9 @@ public class CorporateContractService {
     public Optional<CorporateContract> getCorporateContractById(Long id) {
         return corporateContractRepository.findById(id);
     }
-
+    public Optional<CorporateContract> getCorporateContractByContractNumber(String contractNumber) {
+        return corporateContractRepository.findByContractNumber(contractNumber);
+    }
     public CorporateContract createCorporateContract(CorporateContract corporateContract) {
         validateAndSetPrivilegeCodes(corporateContract);
         corporateContract.setModifiedDate(LocalDate.now());

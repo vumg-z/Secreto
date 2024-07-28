@@ -21,6 +21,7 @@ public class CorporateContract {
     private Long id;
 
     private String contractNumber;
+
     private String brandId;
     private String alternatePlan;
     private String privCodes;
