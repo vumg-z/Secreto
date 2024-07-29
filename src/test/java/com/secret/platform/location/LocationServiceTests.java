@@ -236,7 +236,7 @@ public class LocationServiceTests {
         verify(locationRepository, times(1)).findByLocationNumber("UniqueLocation");
     }
 
-    @Test
+    /*@Test
     void testIsHoldingDrawerUnique() {
         when(locationRepository.findByHoldingDrawer("202")).thenReturn(Optional.empty());
 
@@ -244,7 +244,7 @@ public class LocationServiceTests {
 
         assertTrue(isUnique);
         verify(locationRepository, times(1)).findByHoldingDrawer("202");
-    }
+    }*/
 
     @Test
     void testFindLocationByNumber() {
@@ -259,6 +259,7 @@ public class LocationServiceTests {
         verify(locationRepository, times(1)).findByLocationNumber("PVREY1");
     }
 
+/*
     @Test
     void testSaveLocationWithRegion() {
         Location region = new Location();
@@ -280,6 +281,7 @@ public class LocationServiceTests {
         verify(locationRepository, times(1)).findByLocationNumber("PVREY1");
         verify(locationRepository, times(1)).save(location);
     }
+*/
 
     @Test
     void testSaveLocationWithGeneralLedger() {

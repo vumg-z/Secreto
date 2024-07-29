@@ -1,51 +1,75 @@
 package com.secret.platform.res_rates;
 
 import jakarta.xml.bind.annotation.*;
-
 import java.util.ArrayList;
 import java.util.List;
 
-@XmlRootElement(name = "ResRatesResponse")
+@XmlRootElement(name = "Response")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ResRatesResponseDTO {
 
-    @XmlElement(name = "success")
-    private boolean success;
-
-    @XmlElement(name = "Count")
-    private int count;
-
-    @XmlElementWrapper(name = "Rate")
-    @XmlElement(name = "Rate")
-    private List<Rate> rates = new ArrayList<>();
+    @XmlElement(name = "ResRates")
+    private ResRates resRates = new ResRates(); // Initialize the ResRates object
 
     // Getters and setters
 
-    public void setSuccess(boolean success) {
-        this.success = success;
+    public ResRates getResRates() {
+        return resRates;
     }
 
-    public boolean isSuccess() {
-        return success;
+    public void setResRates(ResRates resRates) {
+        this.resRates = resRates;
+    }
+
+    public void setSuccess(boolean success) {
+        this.resRates.setSuccess(success);
     }
 
     public void setCount(int count) {
-        this.count = count;
-    }
-
-    public int getCount() {
-        return count;
-    }
-
-    public List<Rate> getRates() {
-        return rates;
+        this.resRates.setCount(count);
     }
 
     public void addRate(Rate rate) {
-        this.rates.add(rate);
+        this.resRates.addRate(rate);
     }
 
+    @XmlAccessorType(XmlAccessType.FIELD)
+    public static class ResRates {
+        @XmlAttribute(name = "success")
+        private boolean success;
 
+        @XmlElement(name = "Count")
+        private int count;
+
+        @XmlElement(name = "Rate")
+        private List<Rate> rates = new ArrayList<>();
+
+        // Getters and setters
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public void setSuccess(boolean success) {
+            this.success = success;
+        }
+
+        public int getCount() {
+            return count;
+        }
+
+        public void setCount(int count) {
+            this.count = count;
+        }
+
+        public List<Rate> getRates() {
+            return rates;
+        }
+
+        public void addRate(Rate rate) {
+            this.rates.add(rate);
+        }
+    }
 
     @XmlAccessorType(XmlAccessType.FIELD)
     public static class Rate {
@@ -172,7 +196,7 @@ public class ResRatesResponseDTO {
             this.alternateRateProducts = alternateRateProducts;
         }
 
-        // Inner classes for DropCharge and Distance
+        // Inner classes for DropCharge, Distance, and AlternateRateProduct
 
         @XmlAccessorType(XmlAccessType.FIELD)
         public static class DropCharge {

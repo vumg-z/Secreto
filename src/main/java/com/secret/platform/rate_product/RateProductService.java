@@ -21,4 +21,6 @@ public interface RateProductService {
 
     List<String> findRateProductByName(String rateProductName);
 
+    Optional<RateProduct> getSpecificRateProduct(String locationCode, String countryCode, String rateProductName);
+
 }

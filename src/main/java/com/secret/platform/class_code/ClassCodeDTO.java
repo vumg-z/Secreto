@@ -6,6 +6,7 @@ import lombok.Data;
 public class ClassCodeDTO {
     private String classCode;
     private String rateProductNumber;
+    private String rateSetCode;
     private double dayRate;
     private double weekRate;
     private double monthRate;
