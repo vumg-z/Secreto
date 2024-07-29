@@ -1,5 +1,6 @@
-package com.secret.platform.resEstimates;
+package com.secret.platform.resOptions;
 
+import com.secret.platform.resEstimates.LocalDateTimeAdapter;
 import jakarta.xml.bind.annotation.*;
 import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import lombok.Data;
@@ -7,37 +8,23 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@XmlRootElement(name = "Request")
+@XmlRootElement(name = "ResOptions")
 @XmlAccessorType(XmlAccessType.FIELD)
 @Data
 @NoArgsConstructor
-public class ResEstimatesDTO {
+public class ResOptionsDTO {
 
-    @XmlAttribute(name = "referenceNumber")
-    private String referenceNumber;
+    @XmlElement(name = "Pickup")
+    private Pickup pickup;
 
-    @XmlAttribute(name = "version")
-    private String version;
+    @XmlElement(name = "Return")
+    private Return returnInfo;
 
-    @XmlElement(name = "ResOptions")
-    private ResOptions resOptions;
+    @XmlElement(name = "QuotedRate")
+    private QuotedRate quotedRate;
 
-    @Data
-    @NoArgsConstructor
-    @XmlAccessorType(XmlAccessType.FIELD)
-    public static class ResOptions {
-        @XmlElement(name = "Pickup")
-        private Pickup pickup;
-
-        @XmlElement(name = "Return")
-        private Return returnInfo;
-
-        @XmlElement(name = "QuotedRate")
-        private QuotedRate quotedRate;
-
-        @XmlElement(name = "Vehicle")
-        private Vehicle vehicle;
-    }
+    @XmlElement(name = "Vehicle")
+    private Vehicle vehicle;
 
     @Data
     @NoArgsConstructor

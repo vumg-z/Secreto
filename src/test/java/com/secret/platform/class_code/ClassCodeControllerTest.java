@@ -41,10 +41,10 @@ public class ClassCodeControllerTest {
         this.mockMvc = MockMvcBuilders.standaloneSetup(classCodeController).build();
 
         location = new Location();
-        location.setId(1L);
+        location.setLocationNumber("GDLMY1");
 
         pricingCode = new PricingCode();
-        pricingCode.setId(1L);
+        pricingCode.setCode("PC1");
 
         classCode = ClassCode.builder()
                 .id(1L)
@@ -62,7 +62,9 @@ public class ClassCodeControllerTest {
         mockMvc.perform(get("/api/class-codes"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].classCode").value("A1"))
-                .andExpect(jsonPath("$[0].description").value("Compact"));
+                .andExpect(jsonPath("$[0].description").value("Compact"))
+                //.andExpect(jsonPath("$[0].location.locationNumber").value("GDLMY1"))
+                .andExpect(jsonPath("$[0].pricingCode.code").value("PC1"));
 
         verify(classCodeService, times(1)).getAllClassCodes();
     }
@@ -74,7 +76,9 @@ public class ClassCodeControllerTest {
         mockMvc.perform(get("/api/class-codes/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.classCode").value("A1"))
-                .andExpect(jsonPath("$.description").value("Compact"));
+                .andExpect(jsonPath("$.description").value("Compact"))
+                //.andExpect(jsonPath("$.location.locationNumber").value("GDLMY1"))
+                .andExpect(jsonPath("$.pricingCode.code").value("PC1"));
 
         verify(classCodeService, times(1)).getClassCodeById(1L);
     }
@@ -85,10 +89,12 @@ public class ClassCodeControllerTest {
 
         mockMvc.perform(post("/api/class-codes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"location\":{\"id\":1},\"classCode\":\"A1\",\"description\":\"Compact\",\"pricingCode\":{\"id\":1}}"))
+                        .content("{\"location\":{\"locationNumber\":\"GDLMY1\"},\"classCode\":\"A1\",\"description\":\"Compact\",\"pricingCode\":{\"code\":\"PC1\"}}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.classCode").value("A1"))
-                .andExpect(jsonPath("$.description").value("Compact"));
+                .andExpect(jsonPath("$.description").value("Compact"))
+                //.andExpect(jsonPath("$.location.locationNumber").value("GDLMY1"))
+                .andExpect(jsonPath("$.pricingCode.code").value("PC1"));
 
         verify(classCodeService, times(1)).createClassCode(any(ClassCode.class));
     }
@@ -99,10 +105,12 @@ public class ClassCodeControllerTest {
 
         mockMvc.perform(put("/api/class-codes/1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"location\":{\"id\":1},\"classCode\":\"A1\",\"description\":\"Compact\",\"pricingCode\":{\"id\":1}}"))
+                        .content("{\"location\":{\"locationNumber\":\"GDLMY1\"},\"classCode\":\"A1\",\"description\":\"Compact\",\"pricingCode\":{\"code\":\"PC1\"}}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.classCode").value("A1"))
-                .andExpect(jsonPath("$.description").value("Compact"));
+                .andExpect(jsonPath("$.description").value("Compact"))
+                //.andExpect(jsonPath("$.location.locationNumber").value("GDLMY1"))
+                .andExpect(jsonPath("$.pricingCode.code").value("PC1"));
 
         verify(classCodeService, times(1)).updateClassCode(anyLong(), any(ClassCode.class));
     }

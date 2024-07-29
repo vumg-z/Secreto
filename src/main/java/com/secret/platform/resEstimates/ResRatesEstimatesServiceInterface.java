@@ -1,4 +1,6 @@
 package com.secret.platform.resEstimates;
 
-public class ResRatesEstimatesServiceInterface {
+public interface ResRatesEstimatesServiceInterface {
+
+    ResEstimatesResponseDTO getEstimates(ResEstimatesDTO resEstimatesDTO);
 }
