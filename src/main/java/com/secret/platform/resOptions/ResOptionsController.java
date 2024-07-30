@@ -32,6 +32,25 @@ public class ResOptionsController {
         Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
         ResOptionsDTO resOptionsDTO = (ResOptionsDTO) unmarshaller.unmarshal(new StringReader(requestXml));
 
-        return resOptionsService.getOptions(resOptionsDTO);
+        String currency;
+        if (resOptionsDTO.getSource() != null) {
+            switch (resOptionsDTO.getSource()) {
+                case "US":
+                    currency = "USD";
+                    break;
+                case "MX":
+                    currency = "MXN";
+                    break;
+                default:
+                    currency = "USD"; // Default to USD if the source is not recognized
+                    break;
+            }
+            logger.info("Set currency based on source {}: {}", resOptionsDTO.getSource(), currency);
+        } else {
+            currency = "USD"; // Default to USD if source is not provided
+            logger.info("No source provided, defaulting currency to USD");
+        }
+
+        return resOptionsService.getOptions(resOptionsDTO, currency);
     }
 }

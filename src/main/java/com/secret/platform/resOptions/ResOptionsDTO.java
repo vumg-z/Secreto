@@ -26,6 +26,9 @@ public class ResOptionsDTO {
     @XmlElement(name = "Vehicle")
     private Vehicle vehicle;
 
+    @XmlElement(name = "Source")
+    private String source;
+
     @Data
     @NoArgsConstructor
     @XmlAccessorType(XmlAccessType.FIELD)

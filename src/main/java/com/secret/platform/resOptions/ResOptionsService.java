@@ -11,9 +11,6 @@ import com.secret.platform.options.OptionsRatesService;
 import com.secret.platform.options.OptionsServiceInterface;
 import com.secret.platform.pricing_code.PricingCode;
 import com.secret.platform.privilege_code.PrivilegeCode;
-import com.secret.platform.resOptions.ResOptionsDTO;
-import com.secret.platform.resOptions.ResOptionsResponseDTO;
-import com.secret.platform.resOptions.ResOptionsServiceInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +25,6 @@ public class ResOptionsService implements ResOptionsServiceInterface {
 
     private static final Logger logger = LoggerFactory.getLogger(ResOptionsService.class);
 
-
     @Autowired
     private OptionsServiceInterface optionsService;
 
@@ -41,8 +37,10 @@ public class ResOptionsService implements ResOptionsServiceInterface {
     @Autowired
     private CorporateAccountRepository corporateAccountRepository;
 
+
+
     @Override
-    public ResOptionsResponseDTO getOptions(ResOptionsDTO resOptionsDTO) {
+    public ResOptionsResponseDTO getOptions(ResOptionsDTO resOptionsDTO, String currency) {
         logger.debug("Received request for options: {}", resOptionsDTO);
 
         // Extract classCode and corporateRateID from the request
@@ -55,23 +53,23 @@ public class ResOptionsService implements ResOptionsServiceInterface {
         logger.debug("Fetched {} relevant options based on webResVisible", allRelevantOptions.size());
 
         // Fetch pricingCode and privilegeCode
-        String pricingCode = getPricingCodeFromClassCode(classCode); // Placeholder method
-        String privilegeCode = getPrivilegeCodeFromCorporateRateID(corporateRateID); // Placeholder method
+        String pricingCode = getPricingCodeFromClassCode(classCode);
+        String privilegeCode = getPrivilegeCodeFromCorporateRateID(corporateRateID);
         logger.debug("Determined pricingCode: {} and privilegeCode: {}", pricingCode, privilegeCode);
 
-        // Fetch rates for each option
+        // Fetch rates for each option including currency
         List<ResOptionsResponseDTO.Option> optionDTOList = allRelevantOptions.stream().map(option -> {
             logger.debug("Fetching rates for option code: {}", option.getOptionCode());
-            OptionsRates rates = optionsRatesService.findRatesByCriteria(
+            OptionsRates rates = optionsRatesService.findRatesByCriteriaAndCurrency(
                     option.getOptionCode(),
                     privilegeCode,
-                    pricingCode
+                    pricingCode,
+                    currency
             ).stream().findFirst().orElse(null); // Fetching the first match for simplicity
 
             logger.debug("Rates found for option code {}: {}", option.getOptionCode(), rates);
             return transformOption(option, rates);
         }).collect(Collectors.toList());
-
 
         logger.debug("Transformed options list size: {}", optionDTOList.size());
 
@@ -90,7 +88,6 @@ public class ResOptionsService implements ResOptionsServiceInterface {
 
         return response;
     }
-
 
     private ResOptionsResponseDTO.Option transformOption(Options option, OptionsRates rates) {
         ResOptionsResponseDTO.Option optionDTO = new ResOptionsResponseDTO.Option();
@@ -147,5 +144,4 @@ public class ResOptionsService implements ResOptionsServiceInterface {
         }
         return null;
     }
-
 }
