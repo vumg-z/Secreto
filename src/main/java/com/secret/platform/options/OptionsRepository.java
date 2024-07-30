@@ -10,6 +10,9 @@ import java.util.Optional;
 public interface OptionsRepository extends JpaRepository<Options, Long> {
     Optional<Options> findByOptionCode(String optionCode);
 
+    @Query("SELECT o FROM Options o WHERE o.optSetCode = :optSetCode AND o.optionCode = :optionCode")
+    Optional<Options> findByOptionCodeAndOptSetCode(@Param("optionCode") String optionCode, @Param("optSetCode") String optSetCode);
+
     @Query("SELECT o FROM Options o WHERE o.optSetCode = :optSetCode")
     List<Options> findByOptSetCode(@Param("optSetCode") String optSetCode);
 

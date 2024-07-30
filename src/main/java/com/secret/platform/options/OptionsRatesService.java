@@ -86,8 +86,22 @@ public class OptionsRatesService {
                 .orElseThrow(() -> new IllegalArgumentException("Pricing code with id " + pricingCodeId + " does not exist."));
         logger.debug("Found pricing code: {}", pricingCode);
 
+        // First search with the provided privilege code
         List<OptionsRates> rates = optionsRatesRepository.findByOptionCodeAndPrivilegeCodeAndPricingCodeAndCurrency(optionCode, privilegeCode, pricingCode, currency);
         logger.debug("Found {} rates for optionCode: {}, privilegeCode: {}, pricingCode: {}, currency: {}", rates.size(), optionCode, privilegeCode, pricingCode, currency);
+
+        // Fallback search with the default privilege code "DF" if no rates found
+        if (rates.isEmpty()) {
+            logger.debug("No rates found with privilege code: {}. Trying with default privilege code: DF", privilegeCodeId);
+            PrivilegeCode defaultPrivilegeCode = privilegeCodeRepository.findByCode("DF")
+                    .orElseThrow(() -> new IllegalArgumentException("Default privilege code 'DF' does not exist."));
+            logger.debug("Found default privilege code: {}", defaultPrivilegeCode);
+
+            rates = optionsRatesRepository.findByOptionCodeAndPrivilegeCodeAndPricingCodeAndCurrency(optionCode, defaultPrivilegeCode, pricingCode, currency);
+            logger.debug("Found {} rates for optionCode: {}, default privilege code: DF, pricing code: {}, currency: {}", rates.size(), optionCode, pricingCode, currency);
+        }
+
         return rates;
     }
+
 }
