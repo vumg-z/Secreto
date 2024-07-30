@@ -13,4 +13,6 @@ public interface OptionsRepository extends JpaRepository<Options, Long> {
     @Query("SELECT o FROM Options o WHERE o.optSetCode = :optSetCode")
     List<Options> findByOptSetCode(@Param("optSetCode") String optSetCode);
 
+    List<Options> findByWebResVisibleIn(List<String> visibilityFlags);
+
 }

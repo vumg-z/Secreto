@@ -21,7 +21,7 @@ public class Options {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "opt_code", nullable = false, unique = true, length = 10)
+    @Column(name = "opt_code", nullable = false, unique = false, length = 10)
     private String optionCode;
 
     @Column(name = "short_desc")
@@ -29,6 +29,9 @@ public class Options {
 
     @Column(name = "long_desc")
     private String longDesc;
+
+    @Column(name = "bundle", columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean bundle = false;
 
     /*
     typeFlag

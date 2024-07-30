@@ -28,6 +28,10 @@ public class ClassCodeServiceImpl implements ClassCodeService {
         return classCodeRepository.findAll();
     }
 
+    public Optional<ClassCode> findByClassCode(String classCode) {
+        return classCodeRepository.findByClassCode(classCode);
+    }
+
     @Override
     public Optional<ClassCode> getClassCodeById(Long id) {
         return classCodeRepository.findById(id);

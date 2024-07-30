@@ -5,6 +5,9 @@ import java.util.Optional;
 
 public interface OptionsServiceInterface {
     List<Options> getAllOptions();
+
+    List<Options> resOptionsGetAll();
+
     Optional<Options> getOptionById(Long id);
     Options createOption(Options option);
     Options updateOption(Long id, Options optionDetails);

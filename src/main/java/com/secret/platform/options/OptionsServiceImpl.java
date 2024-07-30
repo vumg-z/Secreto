@@ -4,9 +4,11 @@ import com.secret.platform.exception.ResourceNotFoundException;
 import com.secret.platform.option_set.OptionSet;
 import com.secret.platform.option_set.OptionSetRepository;
 import com.secret.platform.option_set.OptionSetService;
+import jakarta.persistence.Column;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,6 +29,12 @@ public class OptionsServiceImpl implements OptionsServiceInterface {
     @Override
     public List<Options> getAllOptions() {
         return optionsRepository.findAll();
+    }
+
+    @Override
+    public List<Options> resOptionsGetAll() {
+        List<String> visibilityFlags = Arrays.asList("Y", "O", "H");
+        return optionsRepository.findByWebResVisibleIn(visibilityFlags);
     }
 
     @Override
@@ -107,4 +115,6 @@ public class OptionsServiceImpl implements OptionsServiceInterface {
     public List<Options> findByOptSetCode(String optSetCode) {
         return optionsRepository.findByOptSetCode(optSetCode);
     }
+
+
 }
