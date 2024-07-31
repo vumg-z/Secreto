@@ -4,7 +4,11 @@ import com.secret.platform.exception.ResourceNotFoundException;
 import com.secret.platform.option_set.OptionSet;
 import com.secret.platform.option_set.OptionSetRepository;
 import com.secret.platform.option_set.OptionSetService;
-import jakarta.persistence.Column;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -44,13 +48,42 @@ public class OptionsServiceImpl implements OptionsServiceInterface {
 
     @Override
     public Options createOption(Options option) {
-        Options savedOption = optionsRepository.save(option);
-        if (option.getOptSetCode() != null) {
-            OptionSet optionSet = optionSetService.findOrCreateOptionSetByCode(option.getOptSetCode());
-            optionSet.getOptions().add(savedOption);
-            optionSetRepository.save(optionSet);
+        // Check if the option already exists
+        Optional<Options> existingOptionOptional = optionsRepository.findByOptionCode(option.getOptionCode());
+
+        if (existingOptionOptional.isPresent()) {
+            Options existingOption = existingOptionOptional.get();
+
+            // If optSetCode is different, append it to the optSetCodeAppended list
+            String newOptSetCode = option.getOptSetCode();
+            if (newOptSetCode != null && !newOptSetCode.equals(existingOption.getOptSetCode()) && !existingOption.getOptSetCodeAppended().contains(newOptSetCode)) {
+                existingOption.getOptSetCodeAppended().add(newOptSetCode);
+
+                // Save the updated existing option
+                Options updatedOption = optionsRepository.save(existingOption);
+
+                // Handle OptionSet logic
+                OptionSet optionSet = optionSetService.findOrCreateOptionSetByCode(newOptSetCode);
+                optionSet.getOptions().add(updatedOption);
+                optionSetRepository.save(optionSet);
+
+                return updatedOption;
+            } else {
+                return existingOption;
+            }
+        } else {
+            // Save the new option
+            Options savedOption = optionsRepository.save(option);
+
+            // Handle OptionSet logic
+            if (option.getOptSetCode() != null) {
+                OptionSet optionSet = optionSetService.findOrCreateOptionSetByCode(option.getOptSetCode());
+                optionSet.getOptions().add(savedOption);
+                optionSetRepository.save(optionSet);
+            }
+
+            return savedOption;
         }
-        return savedOption;
     }
 
 

@@ -86,9 +86,9 @@ public class OptionsRatesService {
                 .orElseThrow(() -> new IllegalArgumentException("Pricing code with id " + pricingCodeId + " does not exist."));
         logger.debug("Found pricing code: {}", pricingCode);
 
-        // First search with the provided privilege code
+        // First search with the provided privilege code and pricing code
         List<OptionsRates> rates = optionsRatesRepository.findByOptionCodeAndPrivilegeCodeAndPricingCodeAndCurrency(optionCode, privilegeCode, pricingCode, currency);
-        logger.debug("Found {} rates for optionCode: {}, privilegeCode: {}, pricingCode: {}, currency: {}", rates.size(), optionCode, privilegeCode, pricingCode, currency);
+        logger.debug("Found {} rates for optionCode: {}, privilegeCode: {}, pricingCode: {}, currency: {}", rates.size(), optionCode, privilegeCodeId, pricingCodeId, currency);
 
         // Fallback search with the default privilege code "DF" if no rates found
         if (rates.isEmpty()) {
@@ -98,10 +98,23 @@ public class OptionsRatesService {
             logger.debug("Found default privilege code: {}", defaultPrivilegeCode);
 
             rates = optionsRatesRepository.findByOptionCodeAndPrivilegeCodeAndPricingCodeAndCurrency(optionCode, defaultPrivilegeCode, pricingCode, currency);
-            logger.debug("Found {} rates for optionCode: {}, default privilege code: DF, pricing code: {}, currency: {}", rates.size(), optionCode, pricingCode, currency);
+            logger.debug("Found {} rates for optionCode: {}, default privilege code: DF, pricing code: {}, currency: {}", rates.size(), optionCode, pricingCodeId, currency);
+
+            // Fallback search with the default pricing code "DF" if still no rates found
+            if (rates.isEmpty()) {
+                logger.debug("No rates found with pricing code: {}. Trying with default pricing code: DF", pricingCodeId);
+                PricingCode defaultPricingCode = pricingCodeRepository.findByCode("DF")
+                        .orElseThrow(() -> new IllegalArgumentException("Default pricing code 'DF' does not exist."));
+                logger.debug("Found default pricing code: {}", defaultPricingCode);
+
+                rates = optionsRatesRepository.findByOptionCodeAndPrivilegeCodeAndPricingCodeAndCurrency(optionCode, defaultPrivilegeCode, defaultPricingCode, currency);
+                logger.debug("Found {} rates for optionCode: {}, default privilege code: DF, default pricing code: DF, currency: {}", rates.size(), optionCode, currency);
+            }
         }
 
         return rates;
     }
+
+
 
 }

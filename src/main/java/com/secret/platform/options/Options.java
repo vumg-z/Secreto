@@ -7,7 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name = "options")
@@ -306,8 +308,15 @@ public class Options {
      For details on how to set up and use this feature, refer to the chapter Overview - Option Discounts, Bundles, and /Packages.
      */
 
+    // options entity
+
     @Column(name = "opt_set_code")
     private String optSetCode;
+
+    @ElementCollection
+    @CollectionTable(name = "opt_set_code_appended", joinColumns = @JoinColumn(name = "option_id"))
+    @Column(name = "opt_set_code")
+    private List<String> optSetCodeAppended = new ArrayList<>();
 
     @Override
     public String toString() {
