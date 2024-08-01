@@ -169,14 +169,15 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
 
         // Calculate charges and add them
         if (months > 0) {
-            charges.add(new ResEstimatesResponseDTO.Charge("MONTHS", months + " month(s)", months + " month(s)", String.format("%.2f", months * classCode.getMonthRate())));
+            charges.add(new ResEstimatesResponseDTO.Charge("", "MONTHS", String.valueOf(months), String.format("%.2f", months * classCode.getMonthRate())));
         }
         if (weeks > 0) {
-            charges.add(new ResEstimatesResponseDTO.Charge("WEEKS", weeks + " week(s)", weeks + " week(s)", String.format("%.2f", weeks * classCode.getWeekRate())));
+            charges.add(new ResEstimatesResponseDTO.Charge("", "WEEKS", String.valueOf(weeks), String.format("%.2f", weeks * classCode.getWeekRate())));
         }
         if (days > 0) {
-            charges.add(new ResEstimatesResponseDTO.Charge("XDAYS", days + " day(s)", days + " day(s)", String.format("%.2f", days * classCode.getDayRate())));
+            charges.add(new ResEstimatesResponseDTO.Charge("", "XDAYS", String.valueOf(days), String.format("%.2f", days * classCode.getDayRate())));
         }
+
 
         // Calculate the total estimate
         double totalEstimate = (months * classCode.getMonthRate()) + (weeks * classCode.getWeekRate()) + (days * classCode.getDayRate());
