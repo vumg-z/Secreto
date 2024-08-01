@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@XmlRootElement(name = "Request")
+@XmlRootElement(name = "ResEstimate")
 @XmlAccessorType(XmlAccessType.FIELD)
 @Data
 @NoArgsConstructor
@@ -19,25 +19,17 @@ public class ResEstimatesDTO {
     @XmlAttribute(name = "version")
     private String version;
 
-    @XmlElement(name = "ResOptions")
-    private ResOptions resOptions;
+    @XmlElement(name = "Pickup")
+    private Pickup pickup;
 
-    @Data
-    @NoArgsConstructor
-    @XmlAccessorType(XmlAccessType.FIELD)
-    public static class ResOptions {
-        @XmlElement(name = "Pickup")
-        private Pickup pickup;
+    @XmlElement(name = "Return")
+    private Return returnInfo;
 
-        @XmlElement(name = "Return")
-        private Return returnInfo;
+    @XmlElement(name = "QuotedRate")
+    private QuotedRate quotedRate;
 
-        @XmlElement(name = "QuotedRate")
-        private QuotedRate quotedRate;
-
-        @XmlElement(name = "Vehicle")
-        private Vehicle vehicle;
-    }
+    @XmlElement(name = "Source")
+    private String source;
 
     @Data
     @NoArgsConstructor
@@ -67,17 +59,12 @@ public class ResEstimatesDTO {
     @NoArgsConstructor
     @XmlAccessorType(XmlAccessType.FIELD)
     public static class QuotedRate {
+        @XmlAttribute(name = "rateID")
+        private String rateID;
+
         @XmlAttribute(name = "corporateRateID")
         private String corporateRateID;
 
-        @XmlAttribute(name = "classCode")
-        private String classCode;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @XmlAccessorType(XmlAccessType.FIELD)
-    public static class Vehicle {
         @XmlAttribute(name = "classCode")
         private String classCode;
     }

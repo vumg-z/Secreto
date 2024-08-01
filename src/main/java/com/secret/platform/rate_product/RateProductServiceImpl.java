@@ -276,18 +276,13 @@ public class RateProductServiceImpl implements RateProductService {
     }
 
     private String getOptionCode(String coverageKey) {
-        switch (coverageKey) {
-            case "CVG1":
-                return CVG1_CODE;
-            case "CVG2":
-                return CVG2_CODE;
-            case "CVG3":
-                return CVG3_CODE;
-            case "CVG4":
-                return CVG4_CODE;
-            default:
-                return coverageKey;
-        }
+        return switch (coverageKey) {
+            case "CVG1" -> CVG1_CODE;
+            case "CVG2" -> CVG2_CODE;
+            case "CVG3" -> CVG3_CODE;
+            case "CVG4" -> CVG4_CODE;
+            default -> coverageKey;
+        };
     }
 
     @Override
@@ -314,7 +309,6 @@ public class RateProductServiceImpl implements RateProductService {
             throw new IllegalArgumentException("Class code list cannot be empty.");
         }
 
-        // Get the RateProduct using the rateSetCode and product from the first DTO (assuming all have the same rateProductNumber)
         String rateProductNumber = classCodeDTOs.get(0).getRateProductNumber();
         String rateSetCode = classCodeDTOs.get(0).getRateSetCode();
 
@@ -337,6 +331,9 @@ public class RateProductServiceImpl implements RateProductService {
         }
 
         rateProduct.getClassCodes().addAll(classCodeRepository.findByRateProduct(rateProduct));
+
+        logger.info("RateProduct before saving: xDayRate = {}, weekRate = {}", rateProduct.getXDayRate(), rateProduct.getWeekRate());
+
         return rateProductRepository.save(rateProduct);
     }
 
