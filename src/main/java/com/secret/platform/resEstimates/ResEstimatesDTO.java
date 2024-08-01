@@ -2,6 +2,7 @@ package com.secret.platform.resEstimates;
 
 import jakarta.xml.bind.annotation.*;
 import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -33,6 +34,7 @@ public class ResEstimatesDTO {
 
     @Data
     @NoArgsConstructor
+    @AllArgsConstructor
     @XmlAccessorType(XmlAccessType.FIELD)
     public static class Pickup {
         @XmlAttribute(name = "locationCode")
@@ -45,6 +47,7 @@ public class ResEstimatesDTO {
 
     @Data
     @NoArgsConstructor
+    @AllArgsConstructor
     @XmlAccessorType(XmlAccessType.FIELD)
     public static class Return {
         @XmlAttribute(name = "locationCode")
@@ -57,6 +60,7 @@ public class ResEstimatesDTO {
 
     @Data
     @NoArgsConstructor
+    @AllArgsConstructor
     @XmlAccessorType(XmlAccessType.FIELD)
     public static class QuotedRate {
         @XmlAttribute(name = "rateID")
