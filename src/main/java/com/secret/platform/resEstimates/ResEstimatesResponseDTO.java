@@ -67,5 +67,13 @@ public class ResEstimatesResponseDTO {
 
         @XmlAttribute(name = "total")
         private String total;
+
+        // Add this constructor
+        public Charge(String code, String description, String quantity, String total) {
+            this.code = code;
+            this.description = description;
+            this.quantity = quantity;
+            this.total = total;
+        }
     }
 }

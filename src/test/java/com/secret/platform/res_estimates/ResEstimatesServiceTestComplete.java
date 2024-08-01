@@ -22,6 +22,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Optional;
 
+import static junit.framework.TestCase.assertEquals;
+import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -49,6 +51,108 @@ public class ResEstimatesServiceTestComplete {
         ResEstimatesDTO resEstimatesDTO = new ResEstimatesDTO();
         resEstimatesDTO.setPickup(new ResEstimatesDTO.Pickup("LAX", LocalDateTime.of(2024, 8, 5, 10, 0)));
         resEstimatesDTO.setReturnInfo(new ResEstimatesDTO.Return("LAX", LocalDateTime.of(2024, 8, 10, 10, 0)));
+        resEstimatesDTO.setSource("US");
+        // Set the class code here
+        resEstimatesDTO.setQuotedRate(new ResEstimatesDTO.QuotedRate(null, "CORP123", "XXAR"));
+
+        CorporateAccount corporateAccount = new CorporateAccount();
+        CorporateContract corporateContract = new CorporateContract();
+        corporateContract.setRateProduct("Standard Product");
+        corporateAccount.setCorporateContract(corporateContract);
+
+        // Add multiple class codes
+        ClassCode classCode1 = ClassCode.builder()
+                .classCode("XXAR")
+                .dayRate(36.44)
+                .weekRate(255.06)
+                .monthRate(1093.13)
+                .xDayRate(36.44)
+                .hourRate(12.15)
+                .mileRate(0.0)
+                .build();
+
+        ClassCode classCode2 = ClassCode.builder()
+                .classCode("YYBR")
+                .dayRate(40.00)
+                .weekRate(280.00)
+                .monthRate(1200.00)
+                .xDayRate(40.00)
+                .hourRate(15.00)
+                .mileRate(0.0)
+                .build();
+
+        ClassCode classCode3 = ClassCode.builder()
+                .classCode("ZZCR")
+                .dayRate(50.00)
+                .weekRate(300.00)
+                .monthRate(1300.00)
+                .xDayRate(50.00)
+                .hourRate(20.00)
+                .mileRate(0.0)
+                .build();
+
+        RateProduct rateProduct = RateProduct.builder()
+                .product("Standard Product")
+                .classCodes(new ArrayList<>())
+                .build();
+        rateProduct.getClassCodes().add(classCode1);
+        rateProduct.getClassCodes().add(classCode2);
+        rateProduct.getClassCodes().add(classCode3);
+
+        when(corporateAccountRepository.findByCdpId(anyString()))
+                .thenReturn(Optional.of(corporateAccount));
+
+        when(rateProductService.getSpecificRateProduct(anyString(), anyString(), anyString()))
+                .thenReturn(Optional.of(rateProduct));
+
+        // Execute
+        ResEstimatesResponseDTO response = resEstimatesService.getEstimates(resEstimatesDTO);
+
+        // Verify
+        verify(corporateAccountRepository, times(1)).findByCdpId(anyString());
+        verify(rateProductService, times(1)).getSpecificRateProduct(anyString(), anyString(), anyString());
+
+        // Additional assertions based on response
+        assertNotNull(response, "Response should not be null");
+        assertNotNull(response.getResEstimate(), "ResEstimate should not be null");
+        assertNotNull(response.getResEstimate().getRenterEstimate(), "RenterEstimate should not be null");
+
+        // Add assertions to check the estimate
+        ResEstimatesResponseDTO.RenterEstimate renterEstimate = response.getResEstimate().getRenterEstimate();
+        assertEquals("182.20", renterEstimate.getTotal(), "The total estimate should match");
+        //assertEquals(1, renterEstimate.getCharges().size(), "There should be one charge");
+        assertEquals("XDAYS", renterEstimate.getCharges().get(0).getDescription(), "Charge description should be XDAYS");
+        assertEquals("5 day(s)", renterEstimate.getCharges().get(0).getQuantity(), "Quantity should be 5 days");
+    }
+
+
+    @Test
+    void testGetEstimates_CorporateRateNotFoundException() {
+        // Setup
+        ResEstimatesDTO resEstimatesDTO = new ResEstimatesDTO();
+        resEstimatesDTO.setPickup(new ResEstimatesDTO.Pickup("LAX", LocalDateTime.of(2024, 8, 5, 10, 0)));
+        resEstimatesDTO.setReturnInfo(new ResEstimatesDTO.Return("LAX", LocalDateTime.of(2024, 8, 10, 10, 0)));
+        resEstimatesDTO.setSource("US");
+        resEstimatesDTO.setQuotedRate(new ResEstimatesDTO.QuotedRate(null, "CORP123", null));
+
+        when(corporateAccountRepository.findByCdpId(anyString()))
+                .thenReturn(Optional.empty());
+
+        // Execute & Verify
+        assertThrows(CorporateRateNotFoundException.class, () -> {
+            resEstimatesService.getEstimates(resEstimatesDTO);
+        });
+
+        verify(corporateAccountRepository, times(1)).findByCdpId(anyString());
+        verify(rateProductService, times(0)).getSpecificRateProduct(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void testGetEstimates_WeeklyRate() {
+        // Setup
+        ResEstimatesDTO resEstimatesDTO = new ResEstimatesDTO();
+        resEstimatesDTO.setPickup(new ResEstimatesDTO.Pickup("LAX", LocalDateTime.of(2024, 8, 1, 10, 0)));
+        resEstimatesDTO.setReturnInfo(new ResEstimatesDTO.Return("LAX", LocalDateTime.of(2024, 8, 8, 10, 0))); // 7 days
         resEstimatesDTO.setSource("US");
         resEstimatesDTO.setQuotedRate(new ResEstimatesDTO.QuotedRate(null, "CORP123", null));
 
@@ -86,27 +190,54 @@ public class ResEstimatesServiceTestComplete {
         verify(corporateAccountRepository, times(1)).findByCdpId(anyString());
         verify(rateProductService, times(1)).getSpecificRateProduct(anyString(), anyString(), anyString());
 
-        // Additional assertions can be added based on response
+        // Additional assertions based on response
+        // (Assert that response contains a charge for 1 week)
     }
 
     @Test
-    void testGetEstimates_CorporateRateNotFoundException() {
+    void testGetEstimates_MonthlyRate() {
         // Setup
         ResEstimatesDTO resEstimatesDTO = new ResEstimatesDTO();
-        resEstimatesDTO.setPickup(new ResEstimatesDTO.Pickup("LAX", LocalDateTime.of(2024, 8, 5, 10, 0)));
-        resEstimatesDTO.setReturnInfo(new ResEstimatesDTO.Return("LAX", LocalDateTime.of(2024, 8, 10, 10, 0)));
+        resEstimatesDTO.setPickup(new ResEstimatesDTO.Pickup("LAX", LocalDateTime.of(2024, 8, 1, 10, 0)));
+        resEstimatesDTO.setReturnInfo(new ResEstimatesDTO.Return("LAX", LocalDateTime.of(2024, 9, 1, 10, 0))); // 31 days
         resEstimatesDTO.setSource("US");
         resEstimatesDTO.setQuotedRate(new ResEstimatesDTO.QuotedRate(null, "CORP123", null));
 
+        CorporateAccount corporateAccount = new CorporateAccount();
+        CorporateContract corporateContract = new CorporateContract();
+        corporateContract.setRateProduct("Standard Product");
+        corporateAccount.setCorporateContract(corporateContract);
+
+        ClassCode classCode1 = ClassCode.builder()
+                .classCode("XXAR")
+                .dayRate(36.44)
+                .weekRate(255.06)
+                .monthRate(1093.13)
+                .xDayRate(36.44)
+                .hourRate(12.15)
+                .mileRate(0.0)
+                .build();
+
+        RateProduct rateProduct = RateProduct.builder()
+                .product("Standard Product")
+                .classCodes(new ArrayList<>())
+                .build();
+        rateProduct.getClassCodes().add(classCode1);
+
         when(corporateAccountRepository.findByCdpId(anyString()))
-                .thenReturn(Optional.empty());
+                .thenReturn(Optional.of(corporateAccount));
 
-        // Execute & Verify
-        assertThrows(CorporateRateNotFoundException.class, () -> {
-            resEstimatesService.getEstimates(resEstimatesDTO);
-        });
+        when(rateProductService.getSpecificRateProduct(anyString(), anyString(), anyString()))
+                .thenReturn(Optional.of(rateProduct));
 
+        // Execute
+        ResEstimatesResponseDTO response = resEstimatesService.getEstimates(resEstimatesDTO);
+
+        // Verify
         verify(corporateAccountRepository, times(1)).findByCdpId(anyString());
-        verify(rateProductService, times(0)).getSpecificRateProduct(anyString(), anyString(), anyString());
+        verify(rateProductService, times(1)).getSpecificRateProduct(anyString(), anyString(), anyString());
+
+        // Additional assertions based on response
+        // (Assert that response contains a charge for 1 month and 1 day)
     }
 }

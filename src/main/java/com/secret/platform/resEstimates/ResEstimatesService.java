@@ -37,10 +37,12 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         String countryCode = resEstimatesDTO.getSource();
         LocalDateTime pickupDateTime = resEstimatesDTO.getPickup().getDateTime();
         LocalDateTime returnDateTime = resEstimatesDTO.getReturnInfo().getDateTime();
+        String requestedClassCode = resEstimatesDTO.getQuotedRate().getClassCode();
 
         logger.info("Processing reservation estimate request...");
         logger.info("Pickup location: {}, Pickup time: {}", locationCode, pickupDateTime);
         logger.info("Return location: {}, Return time: {}", resEstimatesDTO.getReturnInfo().getLocationCode(), returnDateTime);
+        logger.info("Requested class code: {}", requestedClassCode);
 
         // Retrieve the CorporateAccount using the CorpRateID
         String corpRateID = resEstimatesDTO.getQuotedRate().getCorporateRateID();
@@ -66,22 +68,58 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         rateProductOpt.ifPresentOrElse(rateProduct -> {
             logger.info("Rate product found: {}", rateProduct);
 
-            List<ClassCode> classCodes = rateProduct.getClassCodes();
-            logger.info("Retrieved {} class codes for location {} and country {}", classCodes.size(), locationCode, countryCode);
+            // Use Objects.equals() for safe null checks
+            rateProduct.getClassCodes().stream()
+                    .filter(classCode -> Objects.equals(requestedClassCode, classCode.getClassCode()))
+                    .findFirst()
+                    .ifPresentOrElse(classCode -> {
+                        logger.info("Matching class code found: {}", classCode);
 
-            for (ClassCode classCode : classCodes) {
-                logger.info("Class Code: {}, Day Rate: {}, Week Rate: {}, Month Rate: {}, XDay Rate: {}, Hour Rate: {}",
-                        classCode.getClassCode(), classCode.getDayRate(), classCode.getWeekRate(), classCode.getMonthRate(), classCode.getXDayRate(), classCode.getHourRate());
+                        // Calculate the estimate
+                        double estimate = calculateEstimate(classCode, pickupDateTime, returnDateTime);
+                        logger.info("Estimate for class code {}: {}", classCode.getClassCode(), estimate);
 
-                // Calculate the estimate (placeholder for now)
-                double estimate = calculateEstimate(classCode, pickupDateTime, returnDateTime);
-                logger.info("Estimate for class code {}: {}", classCode.getClassCode(), estimate);
-            }
-        }, () -> logger.warn("No rate product found for location {} and country {}", locationCode, countryCode));
+                        // Create the response object
+                        createResponse(response, classCode, estimate, pickupDateTime, returnDateTime);
+                    }, () -> {
+                        logger.warn("No matching class code found for requested class code: {}", requestedClassCode);
+                        // Create a response with an empty RenterEstimate indicating failure
+                        ResEstimatesResponseDTO.ResEstimate resEstimate = new ResEstimatesResponseDTO.ResEstimate();
+                        ResEstimatesResponseDTO.RenterEstimate renterEstimate = new ResEstimatesResponseDTO.RenterEstimate();
+                        renterEstimate.setTotal("0.00");
+                        renterEstimate.setIncludedDistance("0");
+                        renterEstimate.setCurrencyCode("USD");
+                        renterEstimate.setCharges(Collections.emptyList());
 
-        // Placeholder: add additional logic for setting response
+                        resEstimate.setSuccess(false);
+                        resEstimate.setRenterEstimate(renterEstimate);
+                        response.setResEstimate(resEstimate);
+                    });
+        }, () -> {
+            logger.warn("No rate product found for location {} and country {}", locationCode, countryCode);
+            // Create a response with an empty RenterEstimate indicating failure
+            ResEstimatesResponseDTO.ResEstimate resEstimate = new ResEstimatesResponseDTO.ResEstimate();
+            ResEstimatesResponseDTO.RenterEstimate renterEstimate = new ResEstimatesResponseDTO.RenterEstimate();
+            renterEstimate.setTotal("0.00");
+            renterEstimate.setIncludedDistance("0");
+            renterEstimate.setCurrencyCode("USD");
+            renterEstimate.setCharges(Collections.emptyList());
+
+            resEstimate.setSuccess(false);
+            resEstimate.setRenterEstimate(renterEstimate);
+            response.setResEstimate(resEstimate);
+        });
+
+        // Set response attributes
+        response.setRegardingReferenceNumber(resEstimatesDTO.getReferenceNumber());
+        response.setVersion(resEstimatesDTO.getVersion());
+        response.setWebxgId(UUID.randomUUID().toString());
+
         return response;
     }
+
+
+
 
     double calculateEstimate(ClassCode classCode, LocalDateTime pickupDateTime, LocalDateTime returnDateTime) {
         long totalDays = ChronoUnit.DAYS.between(pickupDateTime, returnDateTime);
@@ -103,8 +141,55 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
 
         // Calculate the total estimate
         double estimate = (months * monthRate) + (weeks * weekRate) + (days * dayRate);
-        logger.info("Calculated estimate: {}", estimate);
+
+        // Log the detailed estimate breakdown
+        logger.info("Estimate for class code {}: {}, with rates - Day Rate: {}, Week Rate: {}, Month Rate: {}. Quantities - Days: {}, Weeks: {}, Months: {}",
+                classCode.getClassCode(), estimate, dayRate, weekRate, monthRate, days, weeks, months);
 
         return estimate;
     }
+
+
+    private void createResponse(ResEstimatesResponseDTO response, ClassCode classCode, double estimate, LocalDateTime pickupDateTime, LocalDateTime returnDateTime) {
+        ResEstimatesResponseDTO.ResEstimate resEstimate = new ResEstimatesResponseDTO.ResEstimate();
+        ResEstimatesResponseDTO.RenterEstimate renterEstimate = new ResEstimatesResponseDTO.RenterEstimate();
+
+        // Set currency code, distance, etc. (hardcoded for now)
+        renterEstimate.setCurrencyCode("USD");
+        renterEstimate.setIncludedDistance("unlimited");
+
+        List<ResEstimatesResponseDTO.Charge> charges = new ArrayList<>();
+        long totalDays = ChronoUnit.DAYS.between(pickupDateTime, returnDateTime);
+
+        // Calculate the number of full months, weeks, and remaining days
+        long months = totalDays / 30;
+        long remainingDaysAfterMonths = totalDays % 30;
+        long weeks = remainingDaysAfterMonths / 7;
+        long days = remainingDaysAfterMonths % 7;
+
+        // Calculate charges and add them
+        if (months > 0) {
+            charges.add(new ResEstimatesResponseDTO.Charge("MONTHS", months + " month(s)", months + " month(s)", String.format("%.2f", months * classCode.getMonthRate())));
+        }
+        if (weeks > 0) {
+            charges.add(new ResEstimatesResponseDTO.Charge("WEEKS", weeks + " week(s)", weeks + " week(s)", String.format("%.2f", weeks * classCode.getWeekRate())));
+        }
+        if (days > 0) {
+            charges.add(new ResEstimatesResponseDTO.Charge("XDAYS", days + " day(s)", days + " day(s)", String.format("%.2f", days * classCode.getDayRate())));
+        }
+
+        // Calculate the total estimate
+        double totalEstimate = (months * classCode.getMonthRate()) + (weeks * classCode.getWeekRate()) + (days * classCode.getDayRate());
+        renterEstimate.setTotal(String.format("%.2f", totalEstimate));
+
+        renterEstimate.setCharges(charges);
+
+        resEstimate.setSuccess(true);
+        resEstimate.setRenterEstimate(renterEstimate);
+
+        response.setResEstimate(resEstimate);
+        logger.info("Response created: {}", response);
+    }
+
+
 }
