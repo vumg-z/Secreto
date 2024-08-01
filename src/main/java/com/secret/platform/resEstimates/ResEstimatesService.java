@@ -5,6 +5,7 @@ import com.secret.platform.corporate_account.CorporateAccount;
 import com.secret.platform.corporate_account.CorporateAccountRepository;
 import com.secret.platform.corporate_contract.CorporateContract;
 import com.secret.platform.exception.CorporateRateNotFoundException;
+import com.secret.platform.privilege_code.PrivilegeCode;
 import com.secret.platform.rate_product.RateProduct;
 import com.secret.platform.rate_product.RateProductService;
 import com.secret.platform.rate_product.RateProductServiceImpl;
@@ -30,7 +31,7 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
 
     @Override
     public ResEstimatesResponseDTO getEstimates(ResEstimatesDTO resEstimatesDTO) {
-        ResEstimatesResponseDTO response = new ResEstimatesResponseDTO();
+        logger.info("Processing reservation estimate request...");
 
         // Extract necessary information from the request DTO
         String locationCode = resEstimatesDTO.getPickup().getLocationCode();
@@ -39,89 +40,93 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         LocalDateTime returnDateTime = resEstimatesDTO.getReturnInfo().getDateTime();
         String requestedClassCode = resEstimatesDTO.getQuotedRate().getClassCode();
 
-        logger.info("Processing reservation estimate request...");
-        logger.info("Pickup location: {}, Pickup time: {}", locationCode, pickupDateTime);
-        logger.info("Return location: {}, Return time: {}", resEstimatesDTO.getReturnInfo().getLocationCode(), returnDateTime);
-        logger.info("Requested class code: {}", requestedClassCode);
+        logRequestDetails(locationCode, pickupDateTime, returnDateTime, requestedClassCode);
 
-        // Retrieve the CorporateAccount using the CorpRateID
+        CorporateAccount corporateAccount = getCorporateAccount(resEstimatesDTO);
+        CorporateContract corporateContract = corporateAccount.getCorporateContract();
+        RateProduct rateProduct = getRateProduct(locationCode, countryCode, corporateContract);
+
+        // here we should implement the logic of getting the options stuff that contains a corporate contract,
+        // a corporate contract can have items added to them, that will override the optset that a rate product could include
+        // these optional items should be included with a charge of 0. And it should be read by optSetCode
+
+        // check priority by traversing the privileges codes attached, the privilege codes attached should have (or not)
+        // an option set, if it has an option set, then it means that some options should be included, if not, then
+        // should check at the level of rate product, that also could have an opt set attached and then add the options
+
+        /*if(!corporateContract.getPrivilegeCodes().isEmpty()){
+            // pls log here what is being retrieved or not
+            List<PrivilegeCode> tempList = corporateContract.getPrivilegeCodes();
+            for (tempList: item
+                LogPrivilegeCodeStuff
+
+            ) {
+
+            }
+        }*/
+
+        /*if(!rateProduct.getRateSet().getRateSetCode().isEmpty()){
+            // pls log here what is being retrieved or not
+        }*/
+
+        return createEstimatesResponse(resEstimatesDTO, requestedClassCode, pickupDateTime, returnDateTime, rateProduct);
+    }
+
+    private void logRequestDetails(String locationCode, LocalDateTime pickupDateTime, LocalDateTime returnDateTime, String requestedClassCode) {
+        logger.info("Pickup location: {}, Pickup time: {}", locationCode, pickupDateTime);
+        logger.info("Return location: {}, Return time: {}", locationCode, returnDateTime);
+        logger.info("Requested class code: {}", requestedClassCode);
+    }
+
+    private CorporateAccount getCorporateAccount(ResEstimatesDTO resEstimatesDTO) {
         String corpRateID = resEstimatesDTO.getQuotedRate().getCorporateRateID();
         CorporateAccount corporateAccount = corporateAccountRepository.findByCdpId(corpRateID)
                 .orElseThrow(() -> {
                     logger.error("Corporate rate not found for ID: {}", corpRateID);
                     return new CorporateRateNotFoundException(corpRateID);
                 });
-
         logger.info("Corporate account found: {}", corporateAccount);
+        return corporateAccount;
+    }
 
-        // Get the CorporateContract linked to the CorporateAccount
-        CorporateContract corporateContract = corporateAccount.getCorporateContract();
-        logger.info("Corporate contract found: {}", corporateContract);
-
-        // Retrieve the RateProduct linked to the CorporateContract
+    private RateProduct getRateProduct(String locationCode, String countryCode, CorporateContract corporateContract) {
         String rateProductName = corporateContract.getRateProduct();
         logger.info("Rate product name from contract: {}", rateProductName);
 
-        // Retrieve the rate product
-        Optional<RateProduct> rateProductOpt = rateProductService.getSpecificRateProduct(locationCode, countryCode, rateProductName);
+        return rateProductService.getSpecificRateProduct(locationCode, countryCode, rateProductName)
+                .orElseThrow(() -> {
+                    logger.warn("No rate product found for location {} and country {}", locationCode, countryCode);
+                    return new CorporateRateNotFoundException("No rate product found");
+                });
+    }
 
-        rateProductOpt.ifPresentOrElse(rateProduct -> {
-            logger.info("Rate product found: {}", rateProduct);
+    private ResEstimatesResponseDTO createEstimatesResponse(ResEstimatesDTO resEstimatesDTO, String requestedClassCode,
+                                                            LocalDateTime pickupDateTime, LocalDateTime returnDateTime, RateProduct rateProduct) {
+        ResEstimatesResponseDTO response = new ResEstimatesResponseDTO();
 
-            // Use Objects.equals() for safe null checks
-            rateProduct.getClassCodes().stream()
-                    .filter(classCode -> Objects.equals(requestedClassCode, classCode.getClassCode()))
-                    .findFirst()
-                    .ifPresentOrElse(classCode -> {
-                        logger.info("Matching class code found: {}", classCode);
+        rateProduct.getClassCodes().stream()
+                .filter(classCode -> Objects.equals(requestedClassCode, classCode.getClassCode()))
+                .findFirst()
+                .ifPresentOrElse(classCode -> {
+                    logger.info("Matching class code found: {}", classCode);
 
-                        // Calculate the estimate
-                        double estimate = calculateEstimate(classCode, pickupDateTime, returnDateTime);
-                        logger.info("Estimate for class code {}: {}", classCode.getClassCode(), estimate);
+                    // Calculate the estimate
+                    double estimate = calculateEstimate(classCode, pickupDateTime, returnDateTime);
+                    logger.info("Estimate for class code {}: {}", classCode.getClassCode(), estimate);
 
-                        // Create the response object
-                        createResponse(response, classCode, estimate, pickupDateTime, returnDateTime);
-                    }, () -> {
-                        logger.warn("No matching class code found for requested class code: {}", requestedClassCode);
-                        // Create a response with an empty RenterEstimate indicating failure
-                        ResEstimatesResponseDTO.ResEstimate resEstimate = new ResEstimatesResponseDTO.ResEstimate();
-                        ResEstimatesResponseDTO.RenterEstimate renterEstimate = new ResEstimatesResponseDTO.RenterEstimate();
-                        renterEstimate.setTotal("0.00");
-                        renterEstimate.setIncludedDistance("0");
-                        renterEstimate.setCurrencyCode("USD");
-                        renterEstimate.setCharges(Collections.emptyList());
+                    // Create the response object
+                    createResponse(response, classCode, estimate, pickupDateTime, returnDateTime);
+                }, () -> {
+                    logger.warn("No matching class code found for requested class code: {}", requestedClassCode);
+                    createEmptyResponse(response);
+                });
 
-                        resEstimate.setSuccess(false);
-                        resEstimate.setRenterEstimate(renterEstimate);
-                        response.setResEstimate(resEstimate);
-                    });
-        }, () -> {
-            logger.warn("No rate product found for location {} and country {}", locationCode, countryCode);
-            // Create a response with an empty RenterEstimate indicating failure
-            ResEstimatesResponseDTO.ResEstimate resEstimate = new ResEstimatesResponseDTO.ResEstimate();
-            ResEstimatesResponseDTO.RenterEstimate renterEstimate = new ResEstimatesResponseDTO.RenterEstimate();
-            renterEstimate.setTotal("0.00");
-            renterEstimate.setIncludedDistance("0");
-            renterEstimate.setCurrencyCode("USD");
-            renterEstimate.setCharges(Collections.emptyList());
-
-            resEstimate.setSuccess(false);
-            resEstimate.setRenterEstimate(renterEstimate);
-            response.setResEstimate(resEstimate);
-        });
-
-        // Set response attributes
-        response.setRegardingReferenceNumber(resEstimatesDTO.getReferenceNumber());
-        response.setVersion(resEstimatesDTO.getVersion());
-        response.setWebxgId(UUID.randomUUID().toString());
+        setResponseAttributes(response, resEstimatesDTO);
 
         return response;
     }
 
-
-
-
-    double calculateEstimate(ClassCode classCode, LocalDateTime pickupDateTime, LocalDateTime returnDateTime) {
+    private double calculateEstimate(ClassCode classCode, LocalDateTime pickupDateTime, LocalDateTime returnDateTime) {
         long totalDays = ChronoUnit.DAYS.between(pickupDateTime, returnDateTime);
         logger.info("Total rental duration: {} days", totalDays);
 
@@ -149,7 +154,6 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         return estimate;
     }
 
-
     private void createResponse(ResEstimatesResponseDTO response, ClassCode classCode, double estimate, LocalDateTime pickupDateTime, LocalDateTime returnDateTime) {
         ResEstimatesResponseDTO.ResEstimate resEstimate = new ResEstimatesResponseDTO.ResEstimate();
         ResEstimatesResponseDTO.RenterEstimate renterEstimate = new ResEstimatesResponseDTO.RenterEstimate();
@@ -158,6 +162,19 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         renterEstimate.setCurrencyCode("USD");
         renterEstimate.setIncludedDistance("unlimited");
 
+        List<ResEstimatesResponseDTO.Charge> charges = calculateCharges(classCode, pickupDateTime, returnDateTime);
+
+        renterEstimate.setTotal(String.format("%.2f", estimate));
+        renterEstimate.setCharges(charges);
+
+        resEstimate.setSuccess(true);
+        resEstimate.setRenterEstimate(renterEstimate);
+
+        response.setResEstimate(resEstimate);
+        logger.info("Response created: {}", response);
+    }
+
+    private List<ResEstimatesResponseDTO.Charge> calculateCharges(ClassCode classCode, LocalDateTime pickupDateTime, LocalDateTime returnDateTime) {
         List<ResEstimatesResponseDTO.Charge> charges = new ArrayList<>();
         long totalDays = ChronoUnit.DAYS.between(pickupDateTime, returnDateTime);
 
@@ -178,19 +195,25 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
             charges.add(new ResEstimatesResponseDTO.Charge("", "XDAYS", String.valueOf(days), String.format("%.2f", days * classCode.getDayRate())));
         }
 
-
-        // Calculate the total estimate
-        double totalEstimate = (months * classCode.getMonthRate()) + (weeks * classCode.getWeekRate()) + (days * classCode.getDayRate());
-        renterEstimate.setTotal(String.format("%.2f", totalEstimate));
-
-        renterEstimate.setCharges(charges);
-
-        resEstimate.setSuccess(true);
-        resEstimate.setRenterEstimate(renterEstimate);
-
-        response.setResEstimate(resEstimate);
-        logger.info("Response created: {}", response);
+        return charges;
     }
 
+    private void createEmptyResponse(ResEstimatesResponseDTO response) {
+        ResEstimatesResponseDTO.ResEstimate resEstimate = new ResEstimatesResponseDTO.ResEstimate();
+        ResEstimatesResponseDTO.RenterEstimate renterEstimate = new ResEstimatesResponseDTO.RenterEstimate();
+        renterEstimate.setTotal("0.00");
+        renterEstimate.setIncludedDistance("0");
+        renterEstimate.setCurrencyCode("USD");
+        renterEstimate.setCharges(Collections.emptyList());
 
+        resEstimate.setSuccess(false);
+        resEstimate.setRenterEstimate(renterEstimate);
+        response.setResEstimate(resEstimate);
+    }
+
+    private void setResponseAttributes(ResEstimatesResponseDTO response, ResEstimatesDTO resEstimatesDTO) {
+        response.setRegardingReferenceNumber(resEstimatesDTO.getReferenceNumber());
+        response.setVersion(resEstimatesDTO.getVersion());
+        response.setWebxgId(UUID.randomUUID().toString());
+    }
 }

@@ -45,6 +45,29 @@ public class PrivilegeCodeServiceImplTest {
     }
 
     @Test
+    void testCreatePrivilegeCodeWithoutOptionSetCodeString() {
+        // Create a PrivilegeCode object without optionSetCodeString
+        PrivilegeCode privilegeCode = PrivilegeCode.builder()
+                .id(1L)
+                .code("CODE")
+                .description("Description")
+                .optionSetCodeString(null) // Empty string
+                .build();
+
+        // Mock the repository to return the saved entity
+        when(privilegeCodeRepository.save(any(PrivilegeCode.class))).thenAnswer(i -> i.getArguments()[0]);
+
+        // Call the createPrivilegeCode method
+        PrivilegeCode createdPrivilegeCode = privilegeCodeService.createPrivilegeCode(privilegeCode);
+
+        // Verify that optionSetCodeString is set to null
+        assertNull(createdPrivilegeCode.getOptionSetCodeString());
+
+        // Verify repository interaction
+        verify(privilegeCodeRepository, times(1)).save(privilegeCode);
+    }
+
+    @Test
     public void testGetPrivilegeCodeById() {
         PrivilegeCode privilegeCode = new PrivilegeCode();
         privilegeCode.setId(1L);

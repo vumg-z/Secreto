@@ -25,8 +25,16 @@ public class PrivilegeCodeServiceImpl implements PrivilegeCodeService {
 
     @Override
     public PrivilegeCode createPrivilegeCode(PrivilegeCode privilegeCode) {
+        // Check if optionSetCodeString is empty or null
+        if (privilegeCode.getOptionSetCodeString() == null || privilegeCode.getOptionSetCodeString().isEmpty()) {
+            // Set optionSetCodeString to null if not provided
+            privilegeCode.setOptionSetCodeString(null);
+        }
+
+        // Save and return the privilegeCode entity
         return privilegeCodeRepository.save(privilegeCode);
     }
+
 
     @Override
     public PrivilegeCode updatePrivilegeCode(Long id, PrivilegeCode privilegeCode) {

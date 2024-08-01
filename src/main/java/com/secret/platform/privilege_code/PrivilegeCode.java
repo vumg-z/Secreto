@@ -47,6 +47,8 @@ public class PrivilegeCode {
     @JoinColumn(name = "option_set_id")
     private OptionSet optionSet;
 
+    private String optionSetCodeString;
+
     @Override
     public String toString() {
         return "PrivilegeCode{" +

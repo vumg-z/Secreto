@@ -22,8 +22,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Optional;
 
-import static junit.framework.TestCase.assertEquals;
-import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -52,7 +52,6 @@ public class ResEstimatesServiceTestComplete {
         resEstimatesDTO.setPickup(new ResEstimatesDTO.Pickup("LAX", LocalDateTime.of(2024, 8, 5, 10, 0)));
         resEstimatesDTO.setReturnInfo(new ResEstimatesDTO.Return("LAX", LocalDateTime.of(2024, 8, 10, 10, 0)));
         resEstimatesDTO.setSource("US");
-        // Set the class code here
         resEstimatesDTO.setQuotedRate(new ResEstimatesDTO.QuotedRate(null, "CORP123", "XXAR"));
 
         CorporateAccount corporateAccount = new CorporateAccount();
@@ -60,7 +59,6 @@ public class ResEstimatesServiceTestComplete {
         corporateContract.setRateProduct("Standard Product");
         corporateAccount.setCorporateContract(corporateContract);
 
-        // Add multiple class codes
         ClassCode classCode1 = ClassCode.builder()
                 .classCode("XXAR")
                 .dayRate(36.44)
@@ -120,11 +118,10 @@ public class ResEstimatesServiceTestComplete {
         // Add assertions to check the estimate
         ResEstimatesResponseDTO.RenterEstimate renterEstimate = response.getResEstimate().getRenterEstimate();
         assertEquals("182.20", renterEstimate.getTotal(), "The total estimate should match");
-        //assertEquals(1, renterEstimate.getCharges().size(), "There should be one charge");
+        assertEquals(1, renterEstimate.getCharges().size(), "There should be one charge");
         assertEquals("XDAYS", renterEstimate.getCharges().get(0).getDescription(), "Charge description should be XDAYS");
-        assertEquals("5 day(s)", renterEstimate.getCharges().get(0).getQuantity(), "Quantity should be 5 days");
+        assertEquals("5", renterEstimate.getCharges().get(0).getQuantity(), "Quantity should be 5");
     }
-
 
     @Test
     void testGetEstimates_CorporateRateNotFoundException() {
@@ -154,7 +151,7 @@ public class ResEstimatesServiceTestComplete {
         resEstimatesDTO.setPickup(new ResEstimatesDTO.Pickup("LAX", LocalDateTime.of(2024, 8, 1, 10, 0)));
         resEstimatesDTO.setReturnInfo(new ResEstimatesDTO.Return("LAX", LocalDateTime.of(2024, 8, 8, 10, 0))); // 7 days
         resEstimatesDTO.setSource("US");
-        resEstimatesDTO.setQuotedRate(new ResEstimatesDTO.QuotedRate(null, "CORP123", null));
+        resEstimatesDTO.setQuotedRate(new ResEstimatesDTO.QuotedRate(null, "CORP123", "XXAR"));
 
         CorporateAccount corporateAccount = new CorporateAccount();
         CorporateContract corporateContract = new CorporateContract();
@@ -191,7 +188,11 @@ public class ResEstimatesServiceTestComplete {
         verify(rateProductService, times(1)).getSpecificRateProduct(anyString(), anyString(), anyString());
 
         // Additional assertions based on response
-        // (Assert that response contains a charge for 1 week)
+        ResEstimatesResponseDTO.RenterEstimate renterEstimate = response.getResEstimate().getRenterEstimate();
+        assertEquals("255.06", renterEstimate.getTotal(), "The total estimate should match for 1 week");
+        assertEquals(1, renterEstimate.getCharges().size(), "There should be one charge");
+        assertEquals("WEEKS", renterEstimate.getCharges().get(0).getDescription(), "Charge description should be WEEKS");
+        assertEquals("1", renterEstimate.getCharges().get(0).getQuantity(), "Quantity should be 1");
     }
 
     @Test
@@ -201,7 +202,7 @@ public class ResEstimatesServiceTestComplete {
         resEstimatesDTO.setPickup(new ResEstimatesDTO.Pickup("LAX", LocalDateTime.of(2024, 8, 1, 10, 0)));
         resEstimatesDTO.setReturnInfo(new ResEstimatesDTO.Return("LAX", LocalDateTime.of(2024, 9, 1, 10, 0))); // 31 days
         resEstimatesDTO.setSource("US");
-        resEstimatesDTO.setQuotedRate(new ResEstimatesDTO.QuotedRate(null, "CORP123", null));
+        resEstimatesDTO.setQuotedRate(new ResEstimatesDTO.QuotedRate(null, "CORP123", "XXAR"));
 
         CorporateAccount corporateAccount = new CorporateAccount();
         CorporateContract corporateContract = new CorporateContract();
@@ -238,6 +239,12 @@ public class ResEstimatesServiceTestComplete {
         verify(rateProductService, times(1)).getSpecificRateProduct(anyString(), anyString(), anyString());
 
         // Additional assertions based on response
-        // (Assert that response contains a charge for 1 month and 1 day)
+        ResEstimatesResponseDTO.RenterEstimate renterEstimate = response.getResEstimate().getRenterEstimate();
+        assertEquals("1129.57", renterEstimate.getTotal(), "The total estimate should match for 1 month and 1 day");
+        assertEquals(2, renterEstimate.getCharges().size(), "There should be two charges");
+        assertEquals("MONTHS", renterEstimate.getCharges().get(0).getDescription(), "Charge description should be MONTHS");
+        assertEquals("1", renterEstimate.getCharges().get(0).getQuantity(), "Quantity should be 1");
+        assertEquals("XDAYS", renterEstimate.getCharges().get(1).getDescription(), "Charge description should be XDAYS");
+        assertEquals("1", renterEstimate.getCharges().get(1).getQuantity(), "Quantity should be 1");
     }
 }
