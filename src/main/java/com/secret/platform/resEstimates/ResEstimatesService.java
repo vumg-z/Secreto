@@ -5,6 +5,9 @@ import com.secret.platform.corporate_account.CorporateAccount;
 import com.secret.platform.corporate_account.CorporateAccountRepository;
 import com.secret.platform.corporate_contract.CorporateContract;
 import com.secret.platform.exception.CorporateRateNotFoundException;
+import com.secret.platform.option_set.OptionSet;
+import com.secret.platform.option_set.OptionSetService;
+import com.secret.platform.options.Options;
 import com.secret.platform.privilege_code.PrivilegeCode;
 import com.secret.platform.rate_product.RateProduct;
 import com.secret.platform.rate_product.RateProductService;
@@ -28,6 +31,10 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
 
     @Autowired
     private CorporateAccountRepository corporateAccountRepository;
+
+    @Autowired
+    // Assuming optionSetService is already initialized and available
+    OptionSetService optionSetService;
 
     @Override
     public ResEstimatesResponseDTO getEstimates(ResEstimatesDTO resEstimatesDTO) {
@@ -69,7 +76,72 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
             // pls log here what is being retrieved or not
         }*/
 
+        // Check for optional items from privilege codes or rate product
+        List<Options> optionalItems = getOptionalItems(corporateContract, rateProduct, optionSetService);
+
         return createEstimatesResponse(resEstimatesDTO, requestedClassCode, pickupDateTime, returnDateTime, rateProduct);
+    }
+
+    private List<Options> getOptionalItems(CorporateContract corporateContract, RateProduct rateProduct, OptionSetService optionSetService) {
+        List<Options> optionalItems = new ArrayList<>();
+
+        // Check if privilege codes exist
+        if (corporateContract.getPrivilegeCodes() != null && !corporateContract.getPrivilegeCodes().isEmpty()) {
+            boolean hasOptionSet = false; // Track if any privilege code has an option set
+
+            for (PrivilegeCode privilegeCode : corporateContract.getPrivilegeCodes()) {
+                // Check if optionSetCodeString is not null or empty
+                if (privilegeCode.getOptionSetCodeString() != null && !privilegeCode.getOptionSetCodeString().isEmpty()) {
+                    // Retrieve options using the optionSetCodeString
+                    List<Options> options = optionSetService.getOptionsByOptSetCode(privilegeCode.getOptionSetCodeString());
+
+                    if (!options.isEmpty()) {
+                        hasOptionSet = true; // Mark that at least one privilege code has an option set
+                        // Add options to the optionalItems list
+                        optionalItems.addAll(options);
+                        logger.info("Privilege code {} includes options: {}", privilegeCode.getCode(), options);
+                    } else {
+                        logger.info("Privilege code {} has an option set code but no options found.", privilegeCode.getCode());
+                    }
+                } else {
+                    logger.info("Privilege code {} has no option set code.", privilegeCode.getCode());
+                }
+            }
+
+            // If no privilege code had an option set, check the rate product for option sets
+            if (!hasOptionSet) {
+                // Check inclOptSet and addonOptSet for options
+                addOptionsFromOptionSet(rateProduct.getInclOptSet(), optionalItems);
+                addOptionsFromOptionSet(rateProduct.getAddonOptSet(), optionalItems);
+
+                if (optionalItems.isEmpty()) {
+                    logger.info("Rate product {} has no options in inclOptSet or addonOptSet.", rateProduct.getProduct());
+                }
+            }
+        } else {
+            // If no privilege codes exist, directly check the rate product for option sets
+            addOptionsFromOptionSet(rateProduct.getInclOptSet(), optionalItems);
+            addOptionsFromOptionSet(rateProduct.getAddonOptSet(), optionalItems);
+
+            if (optionalItems.isEmpty()) {
+                logger.info("Rate product {} has no options in inclOptSet or addonOptSet.", rateProduct.getProduct());
+            }
+        }
+
+        return optionalItems;
+    }
+
+    // Helper method to add options from a given OptionSet
+    private void addOptionsFromOptionSet(OptionSet optionSet, List<Options> optionalItems) {
+        if (optionSet != null) {
+            List<Options> options = optionSet.getOptions();
+            if (!options.isEmpty()) {
+                optionalItems.addAll(options);
+                logger.info("Option set {} includes options: {}", optionSet.getId(), options);
+            } else {
+                logger.info("Option set {} has no options.", optionSet.getId());
+            }
+        }
     }
 
     private void logRequestDetails(String locationCode, LocalDateTime pickupDateTime, LocalDateTime returnDateTime, String requestedClassCode) {
