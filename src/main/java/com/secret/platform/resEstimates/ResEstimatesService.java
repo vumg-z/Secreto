@@ -85,6 +85,9 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
     private List<Options> getOptionalItems(CorporateContract corporateContract, RateProduct rateProduct, OptionSetService optionSetService) {
         List<Options> optionalItems = new ArrayList<>();
 
+        // List to store charge items
+        List<ResEstimatesResponseDTO.Charge> chargeItems = new ArrayList<>();
+
         // Check if privilege codes exist
         if (corporateContract.getPrivilegeCodes() != null && !corporateContract.getPrivilegeCodes().isEmpty()) {
             boolean hasOptionSet = false; // Track if any privilege code has an option set
@@ -100,6 +103,20 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
                         // Add options to the optionalItems list
                         optionalItems.addAll(options);
                         logger.info("Privilege code {} includes options: {}", privilegeCode.getCode(), options);
+
+                        // Create charge items for each option
+                        for (Options option : options) {
+                            ResEstimatesResponseDTO.Charge charge = new ResEstimatesResponseDTO.Charge();
+                            charge.setCode(option.getOptionCode());
+                            charge.setDescription(option.getLongDesc());
+                            charge.setQuantity("1");
+                            charge.setTotal("0.00"); // As specified, total is set to 0.00
+
+                            chargeItems.add(charge);
+
+                            logger.info("Created charge item: {}", charge);
+                        }
+
                     } else {
                         logger.info("Privilege code {} has an option set code but no options found.", privilegeCode.getCode());
                     }
@@ -111,8 +128,8 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
             // If no privilege code had an option set, check the rate product for option sets
             if (!hasOptionSet) {
                 // Check inclOptSet and addonOptSet for options
-                addOptionsFromOptionSet(rateProduct.getInclOptSet(), optionalItems);
-                addOptionsFromOptionSet(rateProduct.getAddonOptSet(), optionalItems);
+                addOptionsFromOptionSet(rateProduct.getInclOptSet(), optionalItems, chargeItems);
+                addOptionsFromOptionSet(rateProduct.getAddonOptSet(), optionalItems, chargeItems);
 
                 if (optionalItems.isEmpty()) {
                     logger.info("Rate product {} has no options in inclOptSet or addonOptSet.", rateProduct.getProduct());
@@ -120,24 +137,40 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
             }
         } else {
             // If no privilege codes exist, directly check the rate product for option sets
-            addOptionsFromOptionSet(rateProduct.getInclOptSet(), optionalItems);
-            addOptionsFromOptionSet(rateProduct.getAddonOptSet(), optionalItems);
+            addOptionsFromOptionSet(rateProduct.getInclOptSet(), optionalItems, chargeItems);
+            addOptionsFromOptionSet(rateProduct.getAddonOptSet(), optionalItems, chargeItems);
 
             if (optionalItems.isEmpty()) {
                 logger.info("Rate product {} has no options in inclOptSet or addonOptSet.", rateProduct.getProduct());
             }
         }
 
+        // Optionally return charges as well, depending on how you want to use them
+        // return chargeItems;
+
         return optionalItems;
     }
 
     // Helper method to add options from a given OptionSet
-    private void addOptionsFromOptionSet(OptionSet optionSet, List<Options> optionalItems) {
+    private void addOptionsFromOptionSet(OptionSet optionSet, List<Options> optionalItems, List<ResEstimatesResponseDTO.Charge> chargeItems) {
         if (optionSet != null) {
             List<Options> options = optionSet.getOptions();
             if (!options.isEmpty()) {
                 optionalItems.addAll(options);
                 logger.info("Option set {} includes options: {}", optionSet.getId(), options);
+
+                for (Options option : options) {
+                    ResEstimatesResponseDTO.Charge charge = new ResEstimatesResponseDTO.Charge();
+                    charge.setCode(option.getOptionCode());
+                    charge.setDescription(option.getLongDesc()); // Assuming Options has a description field
+                    charge.setQuantity("1");
+                    charge.setTotal("0.00"); // As specified, total is set to 0.00
+
+                    chargeItems.add(charge);
+
+                    logger.info("Created charge item: {}", charge);
+                }
+
             } else {
                 logger.info("Option set {} has no options.", optionSet.getId());
             }
