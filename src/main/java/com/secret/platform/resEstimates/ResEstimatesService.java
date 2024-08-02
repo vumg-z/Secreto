@@ -39,7 +39,6 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
     @Autowired
     private OptionsServiceImpl optionsService;
 
-
     @Override
     public ResEstimatesResponseDTO getEstimates(ResEstimatesDTO resEstimatesDTO) {
         logger.info("Processing reservation estimate request...");
@@ -78,6 +77,19 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
                         if (matchingOptions.isEmpty()) {
                             logger.warn("No associated options found for bundle option code: {}", option.getCode());
                         } else {
+                            // Add the bundle option itself as a charge item
+                            Options bundleOption = optionsService.findByOptionCode(option.getCode());
+                            if (bundleOption != null) {
+                                ResEstimatesResponseDTO.Charge bundleCharge = new ResEstimatesResponseDTO.Charge();
+                                bundleCharge.setCode(bundleOption.getOptionCode());
+                                bundleCharge.setDescription(bundleOption.getLongDesc());
+                                bundleCharge.setQuantity("1");
+                                bundleCharge.setTotal("0.00"); // You can change this when rates are applied
+
+                                bundleChargeItems.add(bundleCharge);
+                                logger.info("Added bundle charge item for option: {}", bundleCharge);
+                            }
+
                             for (Options matchedOption : matchingOptions) {
                                 logger.info("Found matching option: {}", matchedOption.getOptionCode());
 
@@ -117,9 +129,6 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         return createEstimatesResponse(resEstimatesDTO, requestedClassCode, pickupDateTime, returnDateTime, rateProduct, chargeItems);
     }
 
-
-
-
     private boolean checkIfBundle(String optionCode) {
         Options option = optionsService.findByOptionCode(optionCode);
 
@@ -136,19 +145,15 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
     // Method to get the option set code for a given option
     private String getOptSetCodeForOption(String optionCode) {
         Options option = optionsService.findByOptionCode(optionCode);
-        // if its bundle then it should get the property of the option,
 
         if (option != null) {
             logger.info("option {} set code: {} ", option.getOptionCode(), option.getOptSetCode());
 
-            // PFC03 this will return for xample
             return option.getOptSetCode();
         }
 
-        return "no found";
+        return ""; // Return an empty string instead of "not found"
     }
-
-
 
     private List<ResEstimatesResponseDTO.Charge> getOptionalItems(CorporateContract corporateContract, RateProduct rateProduct, OptionSetService optionSetService) {
         List<Options> optionalItems = new ArrayList<>();
@@ -227,7 +232,7 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
                 for (Options option : options) {
                     ResEstimatesResponseDTO.Charge charge = new ResEstimatesResponseDTO.Charge();
                     charge.setCode(option.getOptionCode());
-                    charge.setDescription(option.getLongDesc()); // Assuming Options has a longDesc field
+                    charge.setDescription(option.getLongDesc());
                     charge.setQuantity("1");
                     charge.setTotal("0.00"); // As specified, total is set to 0.00
 
