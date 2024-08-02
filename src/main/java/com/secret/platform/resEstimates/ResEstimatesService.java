@@ -53,6 +53,9 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
 
         logRequestDetails(locationCode, pickupDateTime, returnDateTime, requestedClassCode);
 
+        // Initialize list for bundle charge items
+        List<ResEstimatesResponseDTO.Charge> bundleChargeItems = new ArrayList<>();
+
         // Log the options submitted
         if (resEstimatesDTO.getOptions() != null && !resEstimatesDTO.getOptions().isEmpty()) {
             logger.info("Submitted options:");
@@ -77,6 +80,18 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
                         } else {
                             for (Options matchedOption : matchingOptions) {
                                 logger.info("Found matching option: {}", matchedOption.getOptionCode());
+
+                                // Create a charge item for each associated option
+                                ResEstimatesResponseDTO.Charge charge = new ResEstimatesResponseDTO.Charge();
+                                charge.setCode(matchedOption.getOptionCode());
+                                charge.setDescription(matchedOption.getLongDesc());
+                                charge.setQuantity("1");
+                                charge.setTotal("0.00"); // Total is set to 0.00 for bundle items
+
+                                // Add to the list of bundle charge items
+                                bundleChargeItems.add(charge);
+
+                                logger.info("Created bundle charge item: {}", charge);
                             }
                             logger.info("Total {} associated options found for bundle option code {}.", matchingOptions.size(), option.getCode());
                         }
@@ -96,8 +111,12 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         // Collect charge items from privilege codes or rate product
         List<ResEstimatesResponseDTO.Charge> chargeItems = getOptionalItems(corporateContract, rateProduct, optionSetService);
 
+        // Add bundle charge items to the main charge items list
+        chargeItems.addAll(bundleChargeItems);
+
         return createEstimatesResponse(resEstimatesDTO, requestedClassCode, pickupDateTime, returnDateTime, rateProduct, chargeItems);
     }
+
 
 
 
