@@ -8,6 +8,7 @@ import com.secret.platform.exception.CorporateRateNotFoundException;
 import com.secret.platform.option_set.OptionSet;
 import com.secret.platform.option_set.OptionSetService;
 import com.secret.platform.options.Options;
+import com.secret.platform.options.OptionsServiceImpl;
 import com.secret.platform.privilege_code.PrivilegeCode;
 import com.secret.platform.rate_product.RateProduct;
 import com.secret.platform.rate_product.RateProductService;
@@ -33,8 +34,11 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
     private CorporateAccountRepository corporateAccountRepository;
 
     @Autowired
-    // Assuming optionSetService is already initialized and available
     OptionSetService optionSetService;
+
+    @Autowired
+    private OptionsServiceImpl optionsService;
+
 
     @Override
     public ResEstimatesResponseDTO getEstimates(ResEstimatesDTO resEstimatesDTO) {
@@ -54,12 +58,33 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
             logger.info("Submitted options:");
             for (ResEstimatesDTO.Option option : resEstimatesDTO.getOptions()) {
                 logger.info("Option Code: {}", option.getCode());
-                // example retrieved FC03
-                // now we need to write the logic of searching for this FC03 or product, that when a bundle
-                // product is submitted, will have a property named: "bundle" true, if its true,
-                // then it will grab a set of options that shares the same optset that this product has.
-                // "optSetCode": "PFC01", as defined in the example, so it should search for products
-                // we can start by logging the options that shares that. As it should use the service optionset, findoptions by opt set
+
+                // Example logic to check if the option is part of a bundle
+                boolean isBundle = checkIfBundle(option.getCode());
+
+                if (isBundle) {
+                    logger.info("Option Code: {} is a bundle. Retrieving associated options.", option.getCode());
+
+                    // Retrieve the optSetCode for the current option
+                    String optSetCode = getOptSetCodeForOption(option.getCode());
+
+                    if (!optSetCode.isEmpty()) {
+                        // Retrieve associated options using the optSetCode
+                        List<Options> associatedOptions = optionSetService.getOptionsByOptSetCode(optSetCode);
+
+                        if (associatedOptions != null && !associatedOptions.isEmpty()) {
+                            logger.info("Found {} associated options for bundle option code {}:", associatedOptions.size(), option.getCode());
+                            for (Options associatedOption : associatedOptions) {
+                                logger.info("Associated Option Code: {}", associatedOption.getOptionCode());
+                                // Additional processing logic can be added here if needed
+                            }
+                        } else {
+                            logger.warn("No associated options found for bundle option code: {}", option.getCode());
+                        }
+                    } else {
+                        logger.warn("OptSetCode not found for bundle option code: {}", option.getCode());
+                    }
+                }
             }
         } else {
             logger.info("No options submitted.");
@@ -74,6 +99,36 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
 
         return createEstimatesResponse(resEstimatesDTO, requestedClassCode, pickupDateTime, returnDateTime, rateProduct, chargeItems);
     }
+
+
+    private boolean checkIfBundle(String optionCode) {
+        Options option = optionsService.findByOptionCode(optionCode);
+
+        if (option != null) {
+            logger.info("option {} is bundle {}", option.getOptionCode(), option.isBundle());
+            return option.isBundle();
+        }
+
+        logger.info("option {} not found", optionCode);
+
+        return false;
+    }
+
+    // Method to get the option set code for a given option
+    private String getOptSetCodeForOption(String optionCode) {
+        Options option = optionsService.findByOptionCode(optionCode);
+        // if its bundle then it should get the property of the option,
+
+        if (option != null) {
+            logger.info("option {} set code: {} ", option.getOptionCode(), option.getOptSetCode());
+
+            // PFC03 this will return for xample
+            return option.getOptSetCode();
+        }
+
+        return "no found";
+    }
+
 
 
     private List<ResEstimatesResponseDTO.Charge> getOptionalItems(CorporateContract corporateContract, RateProduct rateProduct, OptionSetService optionSetService) {
