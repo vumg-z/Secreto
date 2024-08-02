@@ -53,36 +53,13 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         CorporateContract corporateContract = corporateAccount.getCorporateContract();
         RateProduct rateProduct = getRateProduct(locationCode, countryCode, corporateContract);
 
-        // here we should implement the logic of getting the options stuff that contains a corporate contract,
-        // a corporate contract can have items added to them, that will override the optset that a rate product could include
-        // these optional items should be included with a charge of 0. And it should be read by optSetCode
+        // Collect charge items from privilege codes or rate product
+        List<ResEstimatesResponseDTO.Charge> chargeItems = getOptionalItems(corporateContract, rateProduct, optionSetService);
 
-        // check priority by traversing the privileges codes attached, the privilege codes attached should have (or not)
-        // an option set, if it has an option set, then it means that some options should be included, if not, then
-        // should check at the level of rate product, that also could have an opt set attached and then add the options
-
-        /*if(!corporateContract.getPrivilegeCodes().isEmpty()){
-            // pls log here what is being retrieved or not
-            List<PrivilegeCode> tempList = corporateContract.getPrivilegeCodes();
-            for (tempList: item
-                LogPrivilegeCodeStuff
-
-            ) {
-
-            }
-        }*/
-
-        /*if(!rateProduct.getRateSet().getRateSetCode().isEmpty()){
-            // pls log here what is being retrieved or not
-        }*/
-
-        // Check for optional items from privilege codes or rate product
-        List<Options> optionalItems = getOptionalItems(corporateContract, rateProduct, optionSetService);
-
-        return createEstimatesResponse(resEstimatesDTO, requestedClassCode, pickupDateTime, returnDateTime, rateProduct);
+        return createEstimatesResponse(resEstimatesDTO, requestedClassCode, pickupDateTime, returnDateTime, rateProduct, chargeItems);
     }
 
-    private List<Options> getOptionalItems(CorporateContract corporateContract, RateProduct rateProduct, OptionSetService optionSetService) {
+    private List<ResEstimatesResponseDTO.Charge> getOptionalItems(CorporateContract corporateContract, RateProduct rateProduct, OptionSetService optionSetService) {
         List<Options> optionalItems = new ArrayList<>();
 
         // List to store charge items
@@ -108,7 +85,7 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
                         for (Options option : options) {
                             ResEstimatesResponseDTO.Charge charge = new ResEstimatesResponseDTO.Charge();
                             charge.setCode(option.getOptionCode());
-                            charge.setDescription(option.getLongDesc());
+                            charge.setDescription(option.getLongDesc()); // Assuming Options has a longDesc field
                             charge.setQuantity("1");
                             charge.setTotal("0.00"); // As specified, total is set to 0.00
 
@@ -145,10 +122,7 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
             }
         }
 
-        // Optionally return charges as well, depending on how you want to use them
-        // return chargeItems;
-
-        return optionalItems;
+        return chargeItems;
     }
 
     // Helper method to add options from a given OptionSet
@@ -162,7 +136,7 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
                 for (Options option : options) {
                     ResEstimatesResponseDTO.Charge charge = new ResEstimatesResponseDTO.Charge();
                     charge.setCode(option.getOptionCode());
-                    charge.setDescription(option.getLongDesc()); // Assuming Options has a description field
+                    charge.setDescription(option.getLongDesc()); // Assuming Options has a longDesc field
                     charge.setQuantity("1");
                     charge.setTotal("0.00"); // As specified, total is set to 0.00
 
@@ -206,7 +180,8 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
     }
 
     private ResEstimatesResponseDTO createEstimatesResponse(ResEstimatesDTO resEstimatesDTO, String requestedClassCode,
-                                                            LocalDateTime pickupDateTime, LocalDateTime returnDateTime, RateProduct rateProduct) {
+                                                            LocalDateTime pickupDateTime, LocalDateTime returnDateTime,
+                                                            RateProduct rateProduct, List<ResEstimatesResponseDTO.Charge> chargeItems) {
         ResEstimatesResponseDTO response = new ResEstimatesResponseDTO();
 
         rateProduct.getClassCodes().stream()
@@ -220,7 +195,7 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
                     logger.info("Estimate for class code {}: {}", classCode.getClassCode(), estimate);
 
                     // Create the response object
-                    createResponse(response, classCode, estimate, pickupDateTime, returnDateTime);
+                    createResponse(response, classCode, estimate, pickupDateTime, returnDateTime, chargeItems);
                 }, () -> {
                     logger.warn("No matching class code found for requested class code: {}", requestedClassCode);
                     createEmptyResponse(response);
@@ -259,7 +234,9 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         return estimate;
     }
 
-    private void createResponse(ResEstimatesResponseDTO response, ClassCode classCode, double estimate, LocalDateTime pickupDateTime, LocalDateTime returnDateTime) {
+    private void createResponse(ResEstimatesResponseDTO response, ClassCode classCode, double estimate,
+                                LocalDateTime pickupDateTime, LocalDateTime returnDateTime,
+                                List<ResEstimatesResponseDTO.Charge> chargeItems) {
         ResEstimatesResponseDTO.ResEstimate resEstimate = new ResEstimatesResponseDTO.ResEstimate();
         ResEstimatesResponseDTO.RenterEstimate renterEstimate = new ResEstimatesResponseDTO.RenterEstimate();
 
@@ -267,10 +244,12 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         renterEstimate.setCurrencyCode("USD");
         renterEstimate.setIncludedDistance("unlimited");
 
-        List<ResEstimatesResponseDTO.Charge> charges = calculateCharges(classCode, pickupDateTime, returnDateTime);
+        // Calculate charges and add them
+        List<ResEstimatesResponseDTO.Charge> calculatedCharges = calculateCharges(classCode, pickupDateTime, returnDateTime);
+        calculatedCharges.addAll(chargeItems); // Add the optional item charges
 
         renterEstimate.setTotal(String.format("%.2f", estimate));
-        renterEstimate.setCharges(charges);
+        renterEstimate.setCharges(calculatedCharges);
 
         resEstimate.setSuccess(true);
         resEstimate.setRenterEstimate(renterEstimate);
