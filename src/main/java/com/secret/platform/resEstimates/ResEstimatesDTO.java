@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @XmlRootElement(name = "ResEstimate")
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -31,6 +32,10 @@ public class ResEstimatesDTO {
 
     @XmlElement(name = "Source")
     private String source;
+
+    @XmlElement(name = "Option")
+    private List<Option> options;
+
 
     @Data
     @NoArgsConstructor
@@ -71,5 +76,17 @@ public class ResEstimatesDTO {
 
         @XmlAttribute(name = "classCode")
         private String classCode;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @XmlAccessorType(XmlAccessType.FIELD)
+    public static class Option {
+        @XmlElement(name = "Code")
+        private String code;
+
+        @XmlElement(name = "Qty")
+        private String quantity;
     }
 }

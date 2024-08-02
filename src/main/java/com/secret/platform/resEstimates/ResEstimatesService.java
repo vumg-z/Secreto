@@ -49,6 +49,22 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
 
         logRequestDetails(locationCode, pickupDateTime, returnDateTime, requestedClassCode);
 
+        // Log the options submitted
+        if (resEstimatesDTO.getOptions() != null && !resEstimatesDTO.getOptions().isEmpty()) {
+            logger.info("Submitted options:");
+            for (ResEstimatesDTO.Option option : resEstimatesDTO.getOptions()) {
+                logger.info("Option Code: {}", option.getCode());
+                // example retrieved FC03
+                // now we need to write the logic of searching for this FC03 or product, that when a bundle
+                // product is submitted, will have a property named: "bundle" true, if its true,
+                // then it will grab a set of options that shares the same optset that this product has.
+                // "optSetCode": "PFC01", as defined in the example, so it should search for products
+                // we can start by logging the options that shares that. As it should use the service optionset, findoptions by opt set
+            }
+        } else {
+            logger.info("No options submitted.");
+        }
+
         CorporateAccount corporateAccount = getCorporateAccount(resEstimatesDTO);
         CorporateContract corporateContract = corporateAccount.getCorporateContract();
         RateProduct rateProduct = getRateProduct(locationCode, countryCode, corporateContract);
@@ -58,6 +74,7 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
 
         return createEstimatesResponse(resEstimatesDTO, requestedClassCode, pickupDateTime, returnDateTime, rateProduct, chargeItems);
     }
+
 
     private List<ResEstimatesResponseDTO.Charge> getOptionalItems(CorporateContract corporateContract, RateProduct rateProduct, OptionSetService optionSetService) {
         List<Options> optionalItems = new ArrayList<>();
