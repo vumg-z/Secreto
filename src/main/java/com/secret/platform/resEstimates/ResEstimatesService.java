@@ -1,6 +1,7 @@
 package com.secret.platform.resEstimates;
 
 import com.secret.platform.class_code.ClassCode;
+import com.secret.platform.class_code.ClassCodeServiceImpl;
 import com.secret.platform.corporate_account.CorporateAccount;
 import com.secret.platform.corporate_account.CorporateAccountRepository;
 import com.secret.platform.corporate_contract.CorporateContract;
@@ -8,7 +9,10 @@ import com.secret.platform.exception.CorporateRateNotFoundException;
 import com.secret.platform.option_set.OptionSet;
 import com.secret.platform.option_set.OptionSetService;
 import com.secret.platform.options.Options;
+import com.secret.platform.options.OptionsRates;
+import com.secret.platform.options.OptionsRatesService;
 import com.secret.platform.options.OptionsServiceImpl;
+import com.secret.platform.pricing_code.PricingCode;
 import com.secret.platform.privilege_code.PrivilegeCode;
 import com.secret.platform.rate_product.RateProduct;
 import com.secret.platform.rate_product.RateProductService;
@@ -34,10 +38,16 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
     private CorporateAccountRepository corporateAccountRepository;
 
     @Autowired
-    OptionSetService optionSetService;
+    private OptionSetService optionSetService;
 
     @Autowired
     private OptionsServiceImpl optionsService;
+
+    @Autowired
+    private OptionsRatesService optionsRatesService;
+
+    @Autowired
+    private ClassCodeServiceImpl classCodeService;
 
     @Override
     public ResEstimatesResponseDTO getEstimates(ResEstimatesDTO resEstimatesDTO) {
@@ -54,6 +64,10 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
 
         // Initialize list for bundle charge items
         List<ResEstimatesResponseDTO.Charge> bundleChargeItems = new ArrayList<>();
+
+        // Calculate rental duration in days
+        long totalDays = ChronoUnit.DAYS.between(pickupDateTime, returnDateTime);
+        logger.info("Total rental duration: {} days", totalDays);
 
         // Log the options submitted
         if (resEstimatesDTO.getOptions() != null && !resEstimatesDTO.getOptions().isEmpty()) {
@@ -80,14 +94,36 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
                             // Add the bundle option itself as a charge item
                             Options bundleOption = optionsService.findByOptionCode(option.getCode());
                             if (bundleOption != null) {
-                                ResEstimatesResponseDTO.Charge bundleCharge = new ResEstimatesResponseDTO.Charge();
-                                bundleCharge.setCode(bundleOption.getOptionCode());
-                                bundleCharge.setDescription(bundleOption.getLongDesc());
-                                bundleCharge.setQuantity("1");
-                                bundleCharge.setTotal("0.00"); // You can change this when rates are applied
+                                logger.info("Calculating rates for bundle option: {}", bundleOption.getOptionCode());
 
-                                bundleChargeItems.add(bundleCharge);
-                                logger.info("Added bundle charge item for option: {}", bundleCharge);
+                                // Fetch privilege and pricing codes
+                                String privilegeCode = getPrivilegeCodeFromCorporateRateID(resEstimatesDTO.getQuotedRate().getCorporateRateID());
+                                String pricingCode = getPricingCodeFromClassCode(resEstimatesDTO.getQuotedRate().getClassCode());
+
+                                // Fetch rates for the bundle option
+                                OptionsRates rates = optionsRatesService.findRatesByCriteriaAndCurrency(
+                                        bundleOption.getOptionCode(),
+                                        privilegeCode,
+                                        pricingCode,
+                                        "USD" // Assuming USD, adjust as needed
+                                ).stream().findFirst().orElse(null);
+
+                                if (rates != null) {
+                                    double ratePerDay = rates.getPrimaryRate(); // Assuming we use the primary rate
+                                    double totalBundleCharge = ratePerDay * totalDays;
+                                    logger.info("Rate per day for bundle {}: {}, Total charge: {}", bundleOption.getOptionCode(), ratePerDay, totalBundleCharge);
+
+                                    ResEstimatesResponseDTO.Charge bundleCharge = new ResEstimatesResponseDTO.Charge();
+                                    bundleCharge.setCode(bundleOption.getOptionCode());
+                                    bundleCharge.setDescription(bundleOption.getLongDesc());
+                                    bundleCharge.setQuantity(String.valueOf(totalDays));
+                                    bundleCharge.setTotal(String.format("%.2f", totalBundleCharge));
+
+                                    bundleChargeItems.add(bundleCharge);
+                                    logger.info("Added bundle charge item for option: {}", bundleCharge);
+                                } else {
+                                    logger.warn("No rates found for bundle option: {}", bundleOption.getOptionCode());
+                                }
                             }
 
                             for (Options matchedOption : matchingOptions) {
@@ -129,6 +165,48 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         return createEstimatesResponse(resEstimatesDTO, requestedClassCode, pickupDateTime, returnDateTime, rateProduct, chargeItems);
     }
 
+    private String getPricingCodeFromClassCode(String classCode) {
+        logger.debug("Fetching pricing code for classCode: {}", classCode);
+        Optional<ClassCode> classCodeEntity = classCodeService.findByClassCode(classCode);
+        if (classCodeEntity.isPresent()) {
+            PricingCode pricingCode = classCodeEntity.get().getPricingCode();
+            if (pricingCode != null) {
+                String code = pricingCode.getCode();
+                logger.debug("Found pricing code: {}", code);
+                return code;
+            } else {
+                logger.debug("No pricing code associated with classCode: {}", classCode);
+            }
+        } else {
+            logger.debug("No class code found for classCode: {}", classCode);
+        }
+        return null;
+    }
+
+    private String getPrivilegeCodeFromCorporateRateID(String corporateRateID) {
+        logger.debug("Fetching privilege code for corporateRateID: {}", corporateRateID);
+        Optional<CorporateAccount> corporateAccountOpt = corporateAccountRepository.findByCdpId(corporateRateID);
+
+        if (corporateAccountOpt.isPresent()) {
+            CorporateContract corporateContract = corporateAccountOpt.get().getCorporateContract();
+
+            if (corporateContract != null) {
+                for (PrivilegeCode privilegeCode : corporateContract.getPrivilegeCodes()) {
+                    if (privilegeCode.getOptionSet() == null) {
+                        logger.debug("Found privilege code with null optionSet: {}", privilegeCode.getCode());
+                        return privilegeCode.getCode();
+                    }
+                }
+                logger.debug("No privilege code found with null optionSet for corporateRateID: {}", corporateRateID);
+            } else {
+                logger.debug("No corporate contract found for corporateRateID: {}", corporateRateID);
+            }
+        } else {
+            logger.debug("No corporate account found for corporateRateID: {}", corporateRateID);
+        }
+        return null;
+    }
+
     private boolean checkIfBundle(String optionCode) {
         Options option = optionsService.findByOptionCode(optionCode);
 
@@ -145,14 +223,16 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
     // Method to get the option set code for a given option
     private String getOptSetCodeForOption(String optionCode) {
         Options option = optionsService.findByOptionCode(optionCode);
+        // if its bundle then it should get the property of the option,
 
         if (option != null) {
             logger.info("option {} set code: {} ", option.getOptionCode(), option.getOptSetCode());
 
+            // PFC03 this will return for xample
             return option.getOptSetCode();
         }
 
-        return ""; // Return an empty string instead of "not found"
+        return "no found";
     }
 
     private List<ResEstimatesResponseDTO.Charge> getOptionalItems(CorporateContract corporateContract, RateProduct rateProduct, OptionSetService optionSetService) {
@@ -232,7 +312,7 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
                 for (Options option : options) {
                     ResEstimatesResponseDTO.Charge charge = new ResEstimatesResponseDTO.Charge();
                     charge.setCode(option.getOptionCode());
-                    charge.setDescription(option.getLongDesc());
+                    charge.setDescription(option.getLongDesc()); // Assuming Options has a longDesc field
                     charge.setQuantity("1");
                     charge.setTotal("0.00"); // As specified, total is set to 0.00
 
@@ -344,7 +424,26 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         List<ResEstimatesResponseDTO.Charge> calculatedCharges = calculateCharges(classCode, pickupDateTime, returnDateTime);
         calculatedCharges.addAll(chargeItems); // Add the optional item charges
 
-        renterEstimate.setTotal(String.format("%.2f", estimate));
+        // Log calculated charges
+        logger.info("Calculated base charges: {}", calculatedCharges);
+        logger.info("Additional charge items: {}", chargeItems);
+
+        // Calculate total estimate including bundle charges
+        // Exclude base estimate from calculated charges, only sum optional and bundle charges
+        double optionalAndBundleCharges = chargeItems.stream().mapToDouble(charge -> {
+            double total = Double.parseDouble(charge.getTotal());
+            logger.info("Processing charge: Code={}, Desc={}, Quantity={}, Total={}", charge.getCode(), charge.getDescription(), charge.getQuantity(), total);
+            return total;
+        }).sum();
+
+        double totalEstimate = estimate + optionalAndBundleCharges;
+
+        // Log the estimate breakdown
+        logger.info("Base estimate: {}", estimate);
+        logger.info("Total charges from items (excluding base estimate): {}", optionalAndBundleCharges);
+        logger.info("Final total estimate (base + optional charges): {}", totalEstimate);
+
+        renterEstimate.setTotal(String.format("%.2f", totalEstimate));
         renterEstimate.setCharges(calculatedCharges);
 
         resEstimate.setSuccess(true);
@@ -353,6 +452,8 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         response.setResEstimate(resEstimate);
         logger.info("Response created: {}", response);
     }
+
+
 
     private List<ResEstimatesResponseDTO.Charge> calculateCharges(ClassCode classCode, LocalDateTime pickupDateTime, LocalDateTime returnDateTime) {
         List<ResEstimatesResponseDTO.Charge> charges = new ArrayList<>();
