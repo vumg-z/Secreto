@@ -18,4 +18,8 @@ public interface OptionsRepository extends JpaRepository<Options, Long> {
 
     List<Options> findByWebResVisibleIn(List<String> visibilityFlags);
 
+
+    @Query("SELECT o FROM Options o WHERE :optSetCode MEMBER OF o.optSetCodeAppended")
+    List<Options> findOptionsByOptSetCodeAppended(@Param("optSetCode") String optSetCode);
+
 }

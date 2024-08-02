@@ -4,11 +4,6 @@ import com.secret.platform.exception.ResourceNotFoundException;
 import com.secret.platform.option_set.OptionSet;
 import com.secret.platform.option_set.OptionSetRepository;
 import com.secret.platform.option_set.OptionSetService;
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -41,6 +36,10 @@ public class OptionsServiceImpl implements OptionsServiceInterface {
         return optionsRepository.findByWebResVisibleIn(visibilityFlags);
     }
 
+    @Override
+    public List<Options> findOptionsByAppendedOptSetCode(String optSetCode) {
+        return optionsRepository.findOptionsByOptSetCodeAppended(optSetCode);
+    }
     @Override
     public Optional<Options> getOptionById(Long id) {
         return optionsRepository.findById(id);

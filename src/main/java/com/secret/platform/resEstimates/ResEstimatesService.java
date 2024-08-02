@@ -59,7 +59,7 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
             for (ResEstimatesDTO.Option option : resEstimatesDTO.getOptions()) {
                 logger.info("Option Code: {}", option.getCode());
 
-                // Example logic to check if the option is part of a bundle
+                // Check if the option is a bundle
                 boolean isBundle = checkIfBundle(option.getCode());
 
                 if (isBundle) {
@@ -69,17 +69,16 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
                     String optSetCode = getOptSetCodeForOption(option.getCode());
 
                     if (!optSetCode.isEmpty()) {
-                        // Retrieve associated options using the optSetCode
-                        List<Options> associatedOptions = optionSetService.getOptionsByOptSetCode(optSetCode);
+                        // Use the new service method to find matching options
+                        List<Options> matchingOptions = optionsService.findOptionsByAppendedOptSetCode(optSetCode);
 
-                        if (associatedOptions != null && !associatedOptions.isEmpty()) {
-                            logger.info("Found {} associated options for bundle option code {}:", associatedOptions.size(), option.getCode());
-                            for (Options associatedOption : associatedOptions) {
-                                logger.info("Associated Option Code: {}", associatedOption.getOptionCode());
-                                // Additional processing logic can be added here if needed
-                            }
-                        } else {
+                        if (matchingOptions.isEmpty()) {
                             logger.warn("No associated options found for bundle option code: {}", option.getCode());
+                        } else {
+                            for (Options matchedOption : matchingOptions) {
+                                logger.info("Found matching option: {}", matchedOption.getOptionCode());
+                            }
+                            logger.info("Total {} associated options found for bundle option code {}.", matchingOptions.size(), option.getCode());
                         }
                     } else {
                         logger.warn("OptSetCode not found for bundle option code: {}", option.getCode());
@@ -99,6 +98,7 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
 
         return createEstimatesResponse(resEstimatesDTO, requestedClassCode, pickupDateTime, returnDateTime, rateProduct, chargeItems);
     }
+
 
 
     private boolean checkIfBundle(String optionCode) {

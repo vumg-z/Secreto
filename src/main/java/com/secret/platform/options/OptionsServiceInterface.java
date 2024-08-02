@@ -8,6 +8,8 @@ public interface OptionsServiceInterface {
 
     List<Options> resOptionsGetAll();
 
+    List<Options> findOptionsByAppendedOptSetCode(String optSetCode);
+
     Optional<Options> getOptionById(Long id);
     Options createOption(Options option);
     Options updateOption(Long id, Options optionDetails);
