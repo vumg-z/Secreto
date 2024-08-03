@@ -69,7 +69,7 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
 
         // Initialize lists for charge items
         List<ResEstimatesResponseDTO.Charge> bundleChargeItems = new ArrayList<>();
-        List<ResEstimatesResponseDTO.Charge> feeChargeItems = new ArrayList<>();
+        List<ResEstimatesResponseDTO.Charge> optionChargeItems = new ArrayList<>();
 
         // Calculate rental duration in days
         long totalDays = ChronoUnit.DAYS.between(pickupDateTime, returnDateTime);
@@ -78,7 +78,7 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         // Calculate the base estimate for time-related charges
         double timeRelatedSubtotal = calculateTimeRelatedCharges(resEstimatesDTO, requestedClassCode, pickupDateTime, returnDateTime);
 
-        // Log the options submitted
+        // Process options submitted for the estimate request
         if (resEstimatesDTO.getOptions() != null && !resEstimatesDTO.getOptions().isEmpty()) {
             logger.info("Processing submitted options for estimate request...");
 
@@ -90,136 +90,21 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
                 logger.debug("Option Code: {} isBundle: {}", option.getCode(), isBundle);
 
                 if (isBundle) {
-                    logger.info("Option Code: {} identified as a bundle. Retrieving associated options.", option.getCode());
-
-                    // Retrieve the optSetCode for the current option
-                    String optSetCode = getOptSetCodeForOption(option.getCode());
-                    logger.debug("OptSetCode for Option Code {}: {}", option.getCode(), optSetCode);
-
-                    if (!optSetCode.isEmpty()) {
-                        // Use the new service method to find matching options
-                        List<Options> matchingOptions = optionsService.findOptionsByAppendedOptSetCode(optSetCode);
-                        logger.debug("Found {} matching options for bundle with Option Code: {}", matchingOptions.size(), option.getCode());
-
-                        if (matchingOptions.isEmpty()) {
-                            logger.warn("No associated options found for bundle option code: {}", option.getCode());
-                        } else {
-                            // Add the bundle option itself as a charge item
-                            Options bundleOption = optionsService.findByOptionCode(option.getCode());
-                            if (bundleOption != null) {
-                                logger.info("Calculating rates for bundle option: {}", bundleOption.getOptionCode());
-
-                                // Fetch privilege and pricing codes
-                                String privilegeCode = getPrivilegeCodeFromCorporateRateID(resEstimatesDTO.getQuotedRate().getCorporateRateID());
-                                String pricingCode = getPricingCodeFromClassCode(resEstimatesDTO.getQuotedRate().getClassCode());
-                                logger.debug("Privilege Code: {}, Pricing Code: {}", privilegeCode, pricingCode);
-
-                                // Fetch rates for the bundle option
-                                OptionsRates rates = optionsRatesService.findRatesByCriteriaAndCurrency(
-                                        bundleOption.getOptionCode(),
-                                        privilegeCode,
-                                        pricingCode,
-                                        currency
-                                ).stream().findFirst().orElse(null);
-
-                                if (rates != null) {
-                                    double ratePerDay = rates.getPrimaryRate();
-                                    double totalBundleCharge = ratePerDay * totalDays;
-                                    logger.info("Rate per day for bundle {}: {}, Total charge: {}", bundleOption.getOptionCode(), ratePerDay, totalBundleCharge);
-
-                                    ResEstimatesResponseDTO.Charge bundleCharge = new ResEstimatesResponseDTO.Charge();
-                                    bundleCharge.setCode(bundleOption.getOptionCode());
-                                    bundleCharge.setDescription(bundleOption.getLongDesc());
-                                    bundleCharge.setQuantity(String.valueOf(totalDays));
-                                    bundleCharge.setTotal(String.format("%.2f", totalBundleCharge));
-
-                                    bundleChargeItems.add(bundleCharge);
-                                    logger.info("Added bundle charge item for option: {}", bundleCharge);
-                                } else {
-                                    logger.warn("No rates found for bundle option: {}", bundleOption.getOptionCode());
-                                }
-                            }
-
-                            for (Options matchedOption : matchingOptions) {
-                                logger.info("Found matching option: {}", matchedOption.getOptionCode());
-
-                                // Create a charge item for each associated option
-                                ResEstimatesResponseDTO.Charge charge = new ResEstimatesResponseDTO.Charge();
-                                charge.setCode(matchedOption.getOptionCode());
-                                charge.setDescription(matchedOption.getLongDesc());
-                                charge.setQuantity("1");
-                                charge.setTotal("0.00"); // Total is set to 0.00 for bundle items
-
-                                // Add to the list of bundle charge items
-                                bundleChargeItems.add(charge);
-
-                                logger.info("Created bundle charge item: {}", charge);
-                            }
-                            logger.info("Total {} associated options found for bundle option code {}.", matchingOptions.size(), option.getCode());
-                        }
-                    } else {
-                        logger.warn("OptSetCode not found for bundle option code: {}", option.getCode());
-                    }
-                }
-
-                // Search for special options that apply fees to the current option code
-                logger.info("Searching for fee-based special options applicable to Option Code: {}", option.getCode());
-                List<Options> specialOptions = optionsService.searchByFeesAppliedToOptCode(option.getCode());
-
-                if (specialOptions.isEmpty()) {
-                    logger.warn("No fee-based special options found for Option Code: {}", option.getCode());
+                    processBundleOptions(option, totalDays, currency, bundleChargeItems, resEstimatesDTO);
                 } else {
-                    logger.info("Found {} fee-based special options for Option Code: {}", specialOptions.size(), option.getCode());
-                    for (Options specialOption : specialOptions) {
-                        logger.info("Special option detected with fees: Option Code: {}, Special Option Code: {}, Description: {}",
-                                option.getCode(), specialOption.getOptionCode(), specialOption.getLongDesc());
-
-                        // Fetch rates for the fee-based option
-                        OptionsRates feeRates = optionsRatesService.findRatesByCriteriaAndCurrency(
-                                specialOption.getOptionCode(),
-                                getPrivilegeCodeFromCorporateRateID(resEstimatesDTO.getQuotedRate().getCorporateRateID()),
-                                getPricingCodeFromClassCode(resEstimatesDTO.getQuotedRate().getClassCode()),
-                                "DF"
-                        ).stream().findFirst().orElse(null);
-
-                        if (feeRates != null) {
-                            double feeRate = feeRates.getPrimaryRate();
-                            logger.info("Retrieved fee rate for option {}: {}", specialOption.getOptionCode(), feeRate);
-
-                            // Determine if the fee is percentage-based or a flat rate, right now it just check isFee and converts to percentage.
-                            boolean isPercentage = isPercentageBasedOption(specialOption);
-                            double totalFeeCharge;
-
-                            if (isPercentage) {
-                                // Calculate fee as a percentage of the base amount
-                                totalFeeCharge = timeRelatedSubtotal * (feeRate / 100);
-                                logger.info("Percentage-based fee: {}% of time-related subtotal {} = {}", feeRate, timeRelatedSubtotal, totalFeeCharge);
-                            } else {
-                                // Calculate flat fee based on the rental duration
-                                totalFeeCharge = feeRate * totalDays;
-                                logger.info("Flat fee: {} per day for {} days = {}", feeRate, totalDays, totalFeeCharge);
-                            }
-
-                            ResEstimatesResponseDTO.Charge feeCharge = new ResEstimatesResponseDTO.Charge();
-                            feeCharge.setCode(specialOption.getOptionCode());
-                            feeCharge.setDescription(specialOption.getLongDesc());
-                            feeCharge.setQuantity(isPercentage ? "1" : String.valueOf(totalDays));
-                            feeCharge.setTotal(String.format("%.2f", totalFeeCharge));
-
-                            feeChargeItems.add(feeCharge);
-                            logger.info("Added fee charge item for option: {}", feeCharge);
-                        } else {
-                            logger.warn("No rates found for fee-based option: {}", specialOption.getOptionCode());
-                        }
-                    }
+                    processSingleOption(option, totalDays, currency, optionChargeItems, resEstimatesDTO);
                 }
             }
         } else {
             logger.info("No options submitted for estimate request.");
         }
 
-        // Build the final list of charge items including bundle and fee charges
+        // Combine charge items
         List<ResEstimatesResponseDTO.Charge> allChargeItems = new ArrayList<>(bundleChargeItems);
+        allChargeItems.addAll(optionChargeItems);
+
+        // Calculate fees based on option charges (excluding time-related charges)
+        List<ResEstimatesResponseDTO.Charge> feeChargeItems = calculateFees(allChargeItems);
         allChargeItems.addAll(feeChargeItems);
 
         // Build the response DTO
@@ -234,6 +119,181 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
 
         return createEstimatesResponse(resEstimatesDTO, requestedClassCode, pickupDateTime, returnDateTime, rateProduct, chargeItems);
     }
+
+    private void processBundleOptions(ResEstimatesDTO.Option option, long totalDays, String currency, List<ResEstimatesResponseDTO.Charge> bundleChargeItems, ResEstimatesDTO resEstimatesDTO) {
+        // Retrieve the optSetCode for the current option
+        String optSetCode = getOptSetCodeForOption(option.getCode());
+        logger.debug("OptSetCode for Option Code {}: {}", option.getCode(), optSetCode);
+
+        if (!optSetCode.isEmpty()) {
+            List<Options> matchingOptions = optionsService.findOptionsByAppendedOptSetCode(optSetCode);
+            logger.debug("Found {} matching options for bundle with Option Code: {}", matchingOptions.size(), option.getCode());
+
+            if (matchingOptions.isEmpty()) {
+                logger.warn("No associated options found for bundle option code: {}", option.getCode());
+            } else {
+                // Add the bundle option itself as a charge item
+                Options bundleOption = optionsService.findByOptionCode(option.getCode());
+                if (bundleOption != null) {
+                    addOptionCharge(bundleOption, totalDays, currency, bundleChargeItems, resEstimatesDTO);
+                }
+
+                for (Options matchedOption : matchingOptions) {
+                    logger.info("Found matching option: {}", matchedOption.getOptionCode());
+
+                    // Create a charge item for each associated option
+                    ResEstimatesResponseDTO.Charge charge = new ResEstimatesResponseDTO.Charge();
+                    charge.setCode(matchedOption.getOptionCode());
+                    charge.setDescription(matchedOption.getLongDesc());
+                    charge.setQuantity("1");
+                    charge.setTotal("0.00"); // Total is set to 0.00 for bundle items
+
+                    // Add to the list of bundle charge items
+                    bundleChargeItems.add(charge);
+
+                    logger.info("Created bundle charge item: {}", charge);
+                }
+                logger.info("Total {} associated options found for bundle option code {}.", matchingOptions.size(), option.getCode());
+            }
+        } else {
+            logger.warn("OptSetCode not found for bundle option code: {}", option.getCode());
+        }
+    }
+
+    private void processSingleOption(ResEstimatesDTO.Option option, long totalDays, String currency, List<ResEstimatesResponseDTO.Charge> optionChargeItems, ResEstimatesDTO resEstimatesDTO) {
+        Options optionDetail = optionsService.findByOptionCode(option.getCode());
+        if (optionDetail != null) {
+            logger.info("Processing non-bundle option charge for: {}", option.getCode());
+            addOptionCharge(optionDetail, totalDays, currency, optionChargeItems, resEstimatesDTO);
+        } else {
+            logger.warn("No option details found for option code: {}", option.getCode());
+        }
+    }
+
+    private void addOptionCharge(Options optionDetail, long totalDays, String currency, List<ResEstimatesResponseDTO.Charge> chargeItems, ResEstimatesDTO resEstimatesDTO) {
+        OptionsRates optionRates = optionsRatesService.findRatesByCriteriaAndCurrency(
+                optionDetail.getOptionCode(),
+                getPrivilegeCodeFromCorporateRateID(resEstimatesDTO.getQuotedRate().getCorporateRateID()),
+                getPricingCodeFromClassCode(resEstimatesDTO.getQuotedRate().getClassCode()),
+                currency
+        ).stream().findFirst().orElse(null);
+
+        if (optionRates != null) {
+            double ratePerDay = optionRates.getPrimaryRate();
+            double totalOptionCharge = ratePerDay * totalDays;
+            logger.info("Rate per day for option {}: {}, Total charge: {}", optionDetail.getOptionCode(), ratePerDay, totalOptionCharge);
+
+            ResEstimatesResponseDTO.Charge optionCharge = new ResEstimatesResponseDTO.Charge();
+            optionCharge.setCode(optionDetail.getOptionCode());
+            optionCharge.setDescription(optionDetail.getLongDesc());
+            optionCharge.setQuantity(String.valueOf(totalDays));
+            optionCharge.setTotal(String.format("%.2f", totalOptionCharge));
+
+            chargeItems.add(optionCharge);
+            logger.info("Added option charge item for option: {}", optionCharge);
+        } else {
+            logger.warn("No rates found for option: {}", optionDetail.getOptionCode());
+        }
+    }
+
+    private List<ResEstimatesResponseDTO.Charge> calculateFees(List<ResEstimatesResponseDTO.Charge> chargeItems) {
+        List<ResEstimatesResponseDTO.Charge> feeChargeItems = new ArrayList<>();
+
+        // Calculate the total of non-time-related charges (including specific option charges like FC03)
+        double nonTimeRelatedTotal = chargeItems.stream()
+                .filter(charge -> !(charge.getCode().equals("WEEKS") || charge.getCode().equals("XDAYS") || charge.getCode().equals("MONTHS")))
+                .mapToDouble(charge -> Double.parseDouble(charge.getTotal()))
+                .sum();
+
+        logger.info("Total of non-time-related charges for fee calculation: {}", nonTimeRelatedTotal);
+
+        // Use a map to dynamically handle fees and their calculated amounts
+        Map<String, Double> feeAmounts = new HashMap<>();
+
+        // List of fee codes to be calculated
+        List<String> applicableFeeCodes = List.of("LOCN", "LRF");
+
+        // Calculate each fee and store in the map
+        for (String feeCode : applicableFeeCodes) {
+            double feeAmount = calculateFeeForCode(feeCode, nonTimeRelatedTotal, feeChargeItems);
+            feeAmounts.put(feeCode, feeAmount);
+        }
+
+        // Calculate TAX based on the accumulated fees and specific option charges
+        double taxableAmount = nonTimeRelatedTotal + feeAmounts.values().stream().mapToDouble(Double::doubleValue).sum();
+        calculateTaxFee(taxableAmount, feeChargeItems);
+
+        return feeChargeItems;
+    }
+
+    private double calculateFeeForCode(String feeCode, double baseAmount, List<ResEstimatesResponseDTO.Charge> feeChargeItems) {
+        Options feeOption = optionsService.findByOptionCode(feeCode);
+        if (feeOption != null) {
+            OptionsRates feeRates = optionsRatesService.findRatesByCriteriaAndCurrency(
+                    feeCode,
+                    "DF", // Replace "DF" with the appropriate code or logic
+                    "DF",
+                    "DF"
+            ).stream().findFirst().orElse(null);
+
+            if (feeRates != null) {
+                double feeRate = feeRates.getPrimaryRate();
+                double feeAmount = baseAmount * (feeRate / 100); // Assuming fee is percentage-based
+                logger.info("Calculated fee for {}: FeeRate={}%, FeeAmount={}", feeCode, feeRate, feeAmount);
+
+                ResEstimatesResponseDTO.Charge feeCharge = new ResEstimatesResponseDTO.Charge();
+                feeCharge.setCode(feeCode);
+                feeCharge.setDescription(feeOption.getLongDesc());
+                feeCharge.setQuantity("1");
+                feeCharge.setTotal(String.format("%.2f", feeAmount));
+
+                feeChargeItems.add(feeCharge);
+                logger.info("Added fee charge item for option: {}", feeCharge);
+
+                return feeAmount;
+            } else {
+                logger.warn("No rates found for fee option: {}", feeCode);
+            }
+        } else {
+            logger.warn("No fee option found for code: {}", feeCode);
+        }
+        return 0.0;
+    }
+
+    private void calculateTaxFee(double taxableAmount, List<ResEstimatesResponseDTO.Charge> feeChargeItems) {
+        String feeCode = "TAX";
+        Options feeOption = optionsService.findByOptionCode(feeCode);
+        if (feeOption != null) {
+            OptionsRates feeRates = optionsRatesService.findRatesByCriteriaAndCurrency(
+                    feeCode,
+                    "DF", // Replace "DF" with the appropriate code or logic
+                    "DF",
+                    "DF"
+            ).stream().findFirst().orElse(null);
+
+            if (feeRates != null) {
+                double feeRate = feeRates.getPrimaryRate();
+                double feeAmount = taxableAmount * (feeRate / 100); // Assuming fee is percentage-based
+                logger.info("Calculated TAX for {}: FeeRate={}%, FeeAmount={}", feeCode, feeRate, feeAmount);
+
+                ResEstimatesResponseDTO.Charge feeCharge = new ResEstimatesResponseDTO.Charge();
+                feeCharge.setCode(feeCode);
+                feeCharge.setDescription(feeOption.getLongDesc());
+                feeCharge.setQuantity("1");
+                feeCharge.setTotal(String.format("%.2f", feeAmount));
+
+                feeChargeItems.add(feeCharge);
+                logger.info("Added TAX charge item for option: {}", feeCharge);
+            } else {
+                logger.warn("No rates found for TAX option: {}", feeCode);
+            }
+        } else {
+            logger.warn("No TAX option found for code: {}", feeCode);
+        }
+    }
+
+
+
 
     private String getPricingCodeFromClassCode(String classCode) {
         logger.debug("Fetching pricing code for classCode: {}", classCode);
