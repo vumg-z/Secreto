@@ -15,23 +15,41 @@ import java.io.StringReader;
 @RequestMapping("/api/res-estimates")
 public class ResEstimatesController {
 
-    private final ResEstimatesService resEstimatesService;
     private static final Logger logger = LoggerFactory.getLogger(ResEstimatesController.class);
 
     @Autowired
-    public ResEstimatesController(ResEstimatesService resEstimatesService) {
-        this.resEstimatesService = resEstimatesService;
-    }
+    private ResEstimatesService resEstimatesService;
 
     @PostMapping(value = "", consumes = MediaType.APPLICATION_XML_VALUE, produces = MediaType.APPLICATION_XML_VALUE)
     public ResEstimatesResponseDTO getEstimates(@RequestBody String requestXml) throws JAXBException {
         // Log the received XML data
         logger.info("Received request XML: {}", requestXml);
 
+        // Unmarshal the XML to a ResEstimatesDTO object
         JAXBContext jaxbContext = JAXBContext.newInstance(ResEstimatesDTO.class);
         Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
         ResEstimatesDTO resEstimatesDTO = (ResEstimatesDTO) unmarshaller.unmarshal(new StringReader(requestXml));
 
-        return resEstimatesService.getEstimates(resEstimatesDTO);
+        // Determine currency based on the Source field
+        String currency = determineCurrency(resEstimatesDTO.getSource());
+        logger.info("Determined currency: {}", currency);
+
+        // Pass the DTO and currency to the service for processing
+        return resEstimatesService.getEstimates(resEstimatesDTO, currency);
+    }
+
+    private String determineCurrency(String source) {
+        if (source != null) {
+            switch (source) {
+                case "US":
+                    return "USD";
+                case "MX":
+                    return "MXN";
+                default:
+                    return "USD"; // Default to USD if source is not recognized
+            }
+        }
+        logger.info("No source provided, defaulting currency to USD");
+        return "USD";
     }
 }

@@ -51,6 +51,11 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
 
     @Override
     public ResEstimatesResponseDTO getEstimates(ResEstimatesDTO resEstimatesDTO) {
+        return null;
+    }
+
+    @Override
+    public ResEstimatesResponseDTO getEstimates(ResEstimatesDTO resEstimatesDTO, String currency) {
         logger.info("Processing reservation estimate request...");
 
         // Extract necessary information from the request DTO
@@ -70,17 +75,8 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         long totalDays = ChronoUnit.DAYS.between(pickupDateTime, returnDateTime);
         logger.info("Total rental duration: {} days", totalDays);
 
-        // Initialize a baseAmount for fees that are percentage-based
-        double fc02Coverage = 201.60;  // Assume this is retrieved or calculated elsewhere
-        double totalEstimate = 0.0;
-
-        // Calculate time-related charges
-        double weeksCharge = 200.52;
-        double xdaysCharge = 143.25;
-        double timeRelatedSubtotal = weeksCharge + xdaysCharge;
-
-        // Add time-related charges to total estimate
-        totalEstimate += timeRelatedSubtotal;
+        // Calculate the base estimate for time-related charges
+        double timeRelatedSubtotal = calculateTimeRelatedCharges(resEstimatesDTO, requestedClassCode, pickupDateTime, returnDateTime);
 
         // Log the options submitted
         if (resEstimatesDTO.getOptions() != null && !resEstimatesDTO.getOptions().isEmpty()) {
@@ -123,7 +119,7 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
                                         bundleOption.getOptionCode(),
                                         privilegeCode,
                                         pricingCode,
-                                        "USD" // Assuming USD, adjust as needed
+                                        currency
                                 ).stream().findFirst().orElse(null);
 
                                 if (rates != null) {
@@ -174,7 +170,6 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
                     logger.warn("No fee-based special options found for Option Code: {}", option.getCode());
                 } else {
                     logger.info("Found {} fee-based special options for Option Code: {}", specialOptions.size(), option.getCode());
-
                     for (Options specialOption : specialOptions) {
                         logger.info("Special option detected with fees: Option Code: {}, Special Option Code: {}, Description: {}",
                                 option.getCode(), specialOption.getOptionCode(), specialOption.getLongDesc());
@@ -189,19 +184,20 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
 
                         if (feeRates != null) {
                             double feeRate = feeRates.getPrimaryRate();
+                            logger.info("Retrieved fee rate for option {}: {}", specialOption.getOptionCode(), feeRate);
 
-                            // Determine if fee is a percentage using isFee
-                            boolean isPercentage = specialOption.isFee();
-
+                            // Determine if the fee is percentage-based or a flat rate, right now it just check isFee and converts to percentage.
+                            boolean isPercentage = isPercentageBasedOption(specialOption);
                             double totalFeeCharge;
+
                             if (isPercentage) {
-                                // Calculate fee as a percentage of the base amount (e.g., FC02 charge)
-                                totalFeeCharge = fc02Coverage * (feeRate / 100);
-                                logger.info("Fee rate for option {}: {}% of FC02 {}, Total fee charge: {}", specialOption.getOptionCode(), feeRate, fc02Coverage, totalFeeCharge);
+                                // Calculate fee as a percentage of the base amount
+                                totalFeeCharge = timeRelatedSubtotal * (feeRate / 100);
+                                logger.info("Percentage-based fee: {}% of time-related subtotal {} = {}", feeRate, timeRelatedSubtotal, totalFeeCharge);
                             } else {
-                                // Treat fee as a flat rate
+                                // Calculate flat fee based on the rental duration
                                 totalFeeCharge = feeRate * totalDays;
-                                logger.info("Flat fee rate for option {}: {}, Total fee charge: {}", specialOption.getOptionCode(), feeRate, totalFeeCharge);
+                                logger.info("Flat fee: {} per day for {} days = {}", feeRate, totalDays, totalFeeCharge);
                             }
 
                             ResEstimatesResponseDTO.Charge feeCharge = new ResEstimatesResponseDTO.Charge();
@@ -212,9 +208,6 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
 
                             feeChargeItems.add(feeCharge);
                             logger.info("Added fee charge item for option: {}", feeCharge);
-
-                            // Add fee charges to the total estimate
-                            totalEstimate += totalFeeCharge;
                         } else {
                             logger.warn("No rates found for fee-based option: {}", specialOption.getOptionCode());
                         }
@@ -229,9 +222,6 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         List<ResEstimatesResponseDTO.Charge> allChargeItems = new ArrayList<>(bundleChargeItems);
         allChargeItems.addAll(feeChargeItems);
 
-        // Add coverage fee to the total estimate
-        totalEstimate += fc02Coverage;
-
         // Build the response DTO
         CorporateAccount corporateAccount = getCorporateAccount(resEstimatesDTO);
         CorporateContract corporateContract = corporateAccount.getCorporateContract();
@@ -242,16 +232,7 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         // Add all charges to the main charge items list
         chargeItems.addAll(allChargeItems);
 
-        // Create the final estimate response
-        ResEstimatesResponseDTO response = createEstimatesResponse(resEstimatesDTO, requestedClassCode, pickupDateTime, returnDateTime, rateProduct, chargeItems);
-
-        // Log the total estimate
-        logger.info("Total estimate for reservation: {}", totalEstimate);
-
-        // Set the final total in the response
-        response.getResEstimate().getRenterEstimate().setTotal(String.format("%.2f", totalEstimate));
-
-        return response;
+        return createEstimatesResponse(resEstimatesDTO, requestedClassCode, pickupDateTime, returnDateTime, rateProduct, chargeItems);
     }
 
     private String getPricingCodeFromClassCode(String classCode) {
@@ -350,9 +331,9 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
                         for (Options option : options) {
                             ResEstimatesResponseDTO.Charge charge = new ResEstimatesResponseDTO.Charge();
                             charge.setCode(option.getOptionCode());
-                            charge.setDescription(option.getLongDesc()); // Assuming Options has a longDesc field
+                            charge.setDescription(option.getLongDesc());
                             charge.setQuantity("1");
-                            charge.setTotal("0.00"); // As specified, total is set to 0.00
+                            charge.setTotal("0.00");
 
                             chargeItems.add(charge);
 
@@ -401,9 +382,9 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
                 for (Options option : options) {
                     ResEstimatesResponseDTO.Charge charge = new ResEstimatesResponseDTO.Charge();
                     charge.setCode(option.getOptionCode());
-                    charge.setDescription(option.getLongDesc()); // Assuming Options has a longDesc field
+                    charge.setDescription(option.getLongDesc());
                     charge.setQuantity("1");
-                    charge.setTotal("0.00"); // As specified, total is set to 0.00
+                    charge.setTotal("0.00");
 
                     chargeItems.add(charge);
 
@@ -497,6 +478,27 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
                 classCode.getClassCode(), estimate, dayRate, weekRate, monthRate, days, weeks, months);
 
         return estimate;
+    }
+
+    private double calculateTimeRelatedCharges(ResEstimatesDTO resEstimatesDTO, String requestedClassCode, LocalDateTime pickupDateTime, LocalDateTime returnDateTime) {
+        // This method calculates the base time-related charges using the class code
+        RateProduct rateProduct = getRateProduct(
+                resEstimatesDTO.getPickup().getLocationCode(),
+                resEstimatesDTO.getSource(),
+                getCorporateAccount(resEstimatesDTO).getCorporateContract()
+        );
+
+        double timeRelatedSubtotal = rateProduct.getClassCodes().stream()
+                .filter(classCode -> Objects.equals(requestedClassCode, classCode.getClassCode()))
+                .mapToDouble(classCode -> calculateEstimate(classCode, pickupDateTime, returnDateTime))
+                .sum();
+
+        logger.info("Time-related subtotal: {}", timeRelatedSubtotal);
+        return timeRelatedSubtotal;
+    }
+
+    private boolean isPercentageBasedOption(Options option) {
+        return option.isFee();
     }
 
     private void createResponse(ResEstimatesResponseDTO response, ClassCode classCode, double estimate,
