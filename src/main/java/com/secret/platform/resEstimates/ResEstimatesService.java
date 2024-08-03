@@ -64,6 +64,7 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
 
         // Initialize list for bundle charge items
         List<ResEstimatesResponseDTO.Charge> bundleChargeItems = new ArrayList<>();
+        List<ResEstimatesResponseDTO.Charge> feeChargeItems = new ArrayList<>(); // New list for fee charges
 
         // Calculate rental duration in days
         long totalDays = ChronoUnit.DAYS.between(pickupDateTime, returnDateTime);
@@ -71,22 +72,26 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
 
         // Log the options submitted
         if (resEstimatesDTO.getOptions() != null && !resEstimatesDTO.getOptions().isEmpty()) {
-            logger.info("Submitted options:");
+            logger.info("Processing submitted options for estimate request...");
+
             for (ResEstimatesDTO.Option option : resEstimatesDTO.getOptions()) {
-                logger.info("Option Code: {}", option.getCode());
+                logger.info("Processing Option Code: {}", option.getCode());
 
                 // Check if the option is a bundle
                 boolean isBundle = checkIfBundle(option.getCode());
+                logger.debug("Option Code: {} isBundle: {}", option.getCode(), isBundle);
 
                 if (isBundle) {
-                    logger.info("Option Code: {} is a bundle. Retrieving associated options.", option.getCode());
+                    logger.info("Option Code: {} identified as a bundle. Retrieving associated options.", option.getCode());
 
                     // Retrieve the optSetCode for the current option
                     String optSetCode = getOptSetCodeForOption(option.getCode());
+                    logger.debug("OptSetCode for Option Code {}: {}", option.getCode(), optSetCode);
 
                     if (!optSetCode.isEmpty()) {
                         // Use the new service method to find matching options
                         List<Options> matchingOptions = optionsService.findOptionsByAppendedOptSetCode(optSetCode);
+                        logger.debug("Found {} matching options for bundle with Option Code: {}", matchingOptions.size(), option.getCode());
 
                         if (matchingOptions.isEmpty()) {
                             logger.warn("No associated options found for bundle option code: {}", option.getCode());
@@ -99,6 +104,7 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
                                 // Fetch privilege and pricing codes
                                 String privilegeCode = getPrivilegeCodeFromCorporateRateID(resEstimatesDTO.getQuotedRate().getCorporateRateID());
                                 String pricingCode = getPricingCodeFromClassCode(resEstimatesDTO.getQuotedRate().getClassCode());
+                                logger.debug("Privilege Code: {}, Pricing Code: {}", privilegeCode, pricingCode);
 
                                 // Fetch rates for the bundle option
                                 OptionsRates rates = optionsRatesService.findRatesByCriteriaAndCurrency(
@@ -109,7 +115,7 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
                                 ).stream().findFirst().orElse(null);
 
                                 if (rates != null) {
-                                    double ratePerDay = rates.getPrimaryRate(); // Assuming we use the primary rate
+                                    double ratePerDay = rates.getPrimaryRate();
                                     double totalBundleCharge = ratePerDay * totalDays;
                                     logger.info("Rate per day for bundle {}: {}, Total charge: {}", bundleOption.getOptionCode(), ratePerDay, totalBundleCharge);
 
@@ -147,20 +153,63 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
                         logger.warn("OptSetCode not found for bundle option code: {}", option.getCode());
                     }
                 }
+
+                // Search for special options that apply fees to the current option code
+                logger.info("Searching for fee-based special options applicable to Option Code: {}", option.getCode());
+                List<Options> specialOptions = optionsService.searchByFeesAppliedToOptCode(option.getCode());
+
+                if (specialOptions.isEmpty()) {
+                    logger.warn("No fee-based special options found for Option Code: {}", option.getCode());
+                } else {
+                    logger.info("Found {} fee-based special options for Option Code: {}", specialOptions.size(), option.getCode());
+                    for (Options specialOption : specialOptions) {
+                        logger.info("Special option detected with fees: Option Code: {}, Special Option Code: {}, Description: {}",
+                                option.getCode(), specialOption.getOptionCode(), specialOption.getLongDesc());
+
+                        // Fetch rates for the fee-based option
+                        OptionsRates feeRates = optionsRatesService.findRatesByCriteriaAndCurrency(
+                                specialOption.getOptionCode(),
+                                getPrivilegeCodeFromCorporateRateID(resEstimatesDTO.getQuotedRate().getCorporateRateID()),
+                                getPricingCodeFromClassCode(resEstimatesDTO.getQuotedRate().getClassCode()),
+                                "DF" // Assuming USD, adjust as needed
+                        ).stream().findFirst().orElse(null);
+
+                        if (feeRates != null) {
+                            double feeRate = feeRates.getPrimaryRate();
+                            double totalFeeCharge = feeRate * totalDays; // or other logic to calculate total fee
+                            logger.info("Fee rate for option {}: {}, Total fee charge: {}", specialOption.getOptionCode(), feeRate, totalFeeCharge);
+
+                            ResEstimatesResponseDTO.Charge feeCharge = new ResEstimatesResponseDTO.Charge();
+                            feeCharge.setCode(specialOption.getOptionCode());
+                            feeCharge.setDescription(specialOption.getLongDesc());
+                            feeCharge.setQuantity(String.valueOf(totalDays));
+                            feeCharge.setTotal(String.format("%.2f", totalFeeCharge));
+
+                            feeChargeItems.add(feeCharge);
+                            logger.info("Added fee charge item for option: {}", feeCharge);
+                        } else {
+                            logger.warn("No rates found for fee-based option: {}", specialOption.getOptionCode());
+                        }
+                    }
+                }
             }
         } else {
-            logger.info("No options submitted.");
+            logger.info("No options submitted for estimate request.");
         }
 
+        // Build the final list of charge items including bundle and fee charges
+        List<ResEstimatesResponseDTO.Charge> allChargeItems = new ArrayList<>(bundleChargeItems);
+        allChargeItems.addAll(feeChargeItems);
+
+        // Build the response DTO
         CorporateAccount corporateAccount = getCorporateAccount(resEstimatesDTO);
         CorporateContract corporateContract = corporateAccount.getCorporateContract();
         RateProduct rateProduct = getRateProduct(locationCode, countryCode, corporateContract);
 
-        // Collect charge items from privilege codes or rate product
         List<ResEstimatesResponseDTO.Charge> chargeItems = getOptionalItems(corporateContract, rateProduct, optionSetService);
 
-        // Add bundle charge items to the main charge items list
-        chargeItems.addAll(bundleChargeItems);
+        // Add all charges to the main charge items list
+        chargeItems.addAll(allChargeItems);
 
         return createEstimatesResponse(resEstimatesDTO, requestedClassCode, pickupDateTime, returnDateTime, rateProduct, chargeItems);
     }
@@ -468,16 +517,20 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         // Calculate charges and add them
         if (months > 0) {
             charges.add(new ResEstimatesResponseDTO.Charge("", "MONTHS", String.valueOf(months), String.format("%.2f", months * classCode.getMonthRate())));
+            logger.info("Adding month-related charge item: {} months at rate {}, Total: {}", months, classCode.getMonthRate(), months * classCode.getMonthRate());
         }
         if (weeks > 0) {
             charges.add(new ResEstimatesResponseDTO.Charge("", "WEEKS", String.valueOf(weeks), String.format("%.2f", weeks * classCode.getWeekRate())));
+            logger.info("Adding week-related charge item: {} weeks at rate {}, Total: {}", weeks, classCode.getWeekRate(), weeks * classCode.getWeekRate());
         }
         if (days > 0) {
             charges.add(new ResEstimatesResponseDTO.Charge("", "XDAYS", String.valueOf(days), String.format("%.2f", days * classCode.getDayRate())));
+            logger.info("Adding day-related charge item: {} days at rate {}, Total: {}", days, classCode.getDayRate(), days * classCode.getDayRate());
         }
 
         return charges;
     }
+
 
     private void createEmptyResponse(ResEstimatesResponseDTO response) {
         ResEstimatesResponseDTO.ResEstimate resEstimate = new ResEstimatesResponseDTO.ResEstimate();

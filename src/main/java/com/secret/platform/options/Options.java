@@ -1,5 +1,6 @@
 package com.secret.platform.options;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.secret.platform.general_ledger.GeneralLedger;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -317,6 +318,20 @@ public class Options {
     @CollectionTable(name = "opt_set_code_appended", joinColumns = @JoinColumn(name = "option_id"))
     @Column(name = "opt_set_code")
     private List<String> optSetCodeAppended = new ArrayList<>();
+
+
+    // private List<String> applicableOptionsCodes;
+
+    @ElementCollection
+    @CollectionTable(name = "applicable_options_codes", joinColumns = @JoinColumn(name = "option_id"))
+    @Column(name = "applicable_option_code")
+    private List<String> applicableOptionsCodes = new ArrayList<>();
+
+
+    @Column(name = "is_fee")
+    @JsonProperty("isFee")
+    private boolean isFee;
+
 
     @Override
     public String toString() {

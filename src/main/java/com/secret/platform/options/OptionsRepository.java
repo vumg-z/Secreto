@@ -22,4 +22,11 @@ public interface OptionsRepository extends JpaRepository<Options, Long> {
     @Query("SELECT o FROM Options o WHERE :optSetCode MEMBER OF o.optSetCodeAppended")
     List<Options> findOptionsByOptSetCodeAppended(@Param("optSetCode") String optSetCode);
 
+    List<Options> findByIsFeeTrue();
+
+    List<Options> findByOptionCodeIn(List<String> optionCodes);
+
+    @Query("SELECT o FROM Options o WHERE o.isFee = true AND :optionCode IN ELEMENTS(o.applicableOptionsCodes)")
+    List<Options> findFeeOptionsByApplicableCode(@Param("optionCode") String optionCode);
+
 }

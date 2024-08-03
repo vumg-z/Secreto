@@ -17,4 +17,6 @@ public interface OptionsServiceInterface {
     Options findByOptionCode(String optionCode);
 
     List<Options> findByOptSetCode(String optSetCode);
+
+    List<Options> searchByFeesAppliedToOptCode(String optionCode);
 }
