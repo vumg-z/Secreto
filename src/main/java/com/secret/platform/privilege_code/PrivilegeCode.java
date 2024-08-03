@@ -19,9 +19,6 @@ public class PrivilegeCode {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-
-
     @Column(unique = true)
     private String code;
 
@@ -49,6 +46,8 @@ public class PrivilegeCode {
     @ManyToOne
     @JoinColumn(name = "option_set_id")
     private OptionSet optionSet;
+
+    private String optionSetCodeString;
 
     @Override
     public String toString() {

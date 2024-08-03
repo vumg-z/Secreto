@@ -3,8 +3,9 @@ package com.secret.platform.corporate_contract;
 import com.secret.platform.exception.ResourceNotFoundException;
 import com.secret.platform.privilege_code.PrivilegeCode;
 import com.secret.platform.privilege_code.PrivilegeCodeRepository;
-import com.secret.platform.rate_product.RateProduct;
-import com.secret.platform.rate_product.RateProductRepository;
+import com.secret.platform.rate_product.RateProductService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,8 @@ import java.util.stream.Collectors;
 @Service
 public class CorporateContractService {
 
+    private static final Logger logger = LoggerFactory.getLogger(CorporateContractService.class);
+
     @Autowired
     private CorporateContractRepository corporateContractRepository;
 
@@ -23,7 +26,7 @@ public class CorporateContractService {
     private PrivilegeCodeRepository privilegeCodeRepository;
 
     @Autowired
-    private RateProductRepository rateProductRepository;
+    private RateProductService rateProductService;
 
     public List<CorporateContract> getAllCorporateContracts() {
         return corporateContractRepository.findAll();
@@ -32,34 +35,45 @@ public class CorporateContractService {
     public Optional<CorporateContract> getCorporateContractById(Long id) {
         return corporateContractRepository.findById(id);
     }
-
+    public Optional<CorporateContract> getCorporateContractByContractNumber(String contractNumber) {
+        return corporateContractRepository.findByContractNumber(contractNumber);
+    }
     public CorporateContract createCorporateContract(CorporateContract corporateContract) {
-        validateAndSetRelationships(corporateContract);
+        validateAndSetPrivilegeCodes(corporateContract);
         corporateContract.setModifiedDate(LocalDate.now());
-        return corporateContractRepository.save(corporateContract);
+        CorporateContract savedContract = corporateContractRepository.save(corporateContract);
+        validateAndSetRateProduct(savedContract);
+        return corporateContractRepository.save(savedContract);
     }
 
     public CorporateContract updateCorporateContract(Long id, CorporateContract corporateContractDetails) {
         return corporateContractRepository.findById(id)
                 .map(existingCorporateContract -> {
-                    validateAndSetRelationships(corporateContractDetails);
+                    validateAndSetPrivilegeCodes(corporateContractDetails);
                     corporateContractDetails.setId(id);
                     corporateContractDetails.setModifiedDate(LocalDate.now());
-                    return corporateContractRepository.save(corporateContractDetails);
+                    CorporateContract updatedContract = corporateContractRepository.save(corporateContractDetails);
+                    validateAndSetRateProduct(updatedContract);
+                    return corporateContractRepository.save(updatedContract);
                 })
                 .orElseThrow(() -> new ResourceNotFoundException("CorporateContract not found with id " + id));
     }
 
-    public void deleteCorporateContract(Long id) {
-        if (corporateContractRepository.existsById(id)) {
-            corporateContractRepository.deleteById(id);
+    private void validateAndSetRateProduct(CorporateContract corporateContract) {
+        String rateProductName = corporateContract.getRateProduct();
+        if (rateProductName != null && !rateProductName.isEmpty()) {
+            List<String> foundRateProductNames = rateProductService.findRateProductByName(rateProductName);
+            if (foundRateProductNames.isEmpty()) {
+                throw new ResourceNotFoundException("RateProduct not found with product name " + rateProductName);
+            }
+            corporateContract.setRateProduct(foundRateProductNames.get(0));  // Pick the first one or handle appropriately
+            logger.info("RateProduct {} has been set for CorporateContract with contract number {}", foundRateProductNames.get(0), corporateContract.getContractNumber());
         } else {
-            throw new ResourceNotFoundException("CorporateContract not found with id " + id);
+            logger.warn("RateProduct name is null or empty for CorporateContract with contract number {}", corporateContract.getContractNumber());
         }
     }
 
-    private void validateAndSetRelationships(CorporateContract corporateContract) {
-        // Validate and set PrivilegeCodes by code
+    private void validateAndSetPrivilegeCodes(CorporateContract corporateContract) {
         if (corporateContract.getPrivilegeCodes() != null) {
             List<PrivilegeCode> validPrivilegeCodes = corporateContract.getPrivilegeCodes().stream()
                     .map(pc -> privilegeCodeRepository.findByCode(pc.getCode())
@@ -67,12 +81,13 @@ public class CorporateContractService {
                     .collect(Collectors.toList());
             corporateContract.setPrivilegeCodes(validPrivilegeCodes);
         }
+    }
 
-        // Validate and set RateProduct by code
-        if (corporateContract.getRateProduct() != null && corporateContract.getRateProduct().getProduct() != null) {
-            RateProduct rateProduct = rateProductRepository.findByProduct(corporateContract.getRateProduct().getProduct())
-                    .orElseThrow(() -> new ResourceNotFoundException("RateProduct not found with code " + corporateContract.getRateProduct().getProduct()));
-            corporateContract.setRateProduct(rateProduct);
+    public void deleteCorporateContract(Long id) {
+        if (corporateContractRepository.existsById(id)) {
+            corporateContractRepository.deleteById(id);
+        } else {
+            throw new ResourceNotFoundException("CorporateContract not found with id " + id);
         }
     }
 }

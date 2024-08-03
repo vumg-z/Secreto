@@ -10,7 +10,23 @@ import java.util.Optional;
 public interface OptionsRepository extends JpaRepository<Options, Long> {
     Optional<Options> findByOptionCode(String optionCode);
 
+    @Query("SELECT o FROM Options o WHERE o.optSetCode = :optSetCode AND o.optionCode = :optionCode")
+    Optional<Options> findByOptionCodeAndOptSetCode(@Param("optionCode") String optionCode, @Param("optSetCode") String optSetCode);
+
     @Query("SELECT o FROM Options o WHERE o.optSetCode = :optSetCode")
     List<Options> findByOptSetCode(@Param("optSetCode") String optSetCode);
+
+    List<Options> findByWebResVisibleIn(List<String> visibilityFlags);
+
+
+    @Query("SELECT o FROM Options o WHERE :optSetCode MEMBER OF o.optSetCodeAppended")
+    List<Options> findOptionsByOptSetCodeAppended(@Param("optSetCode") String optSetCode);
+
+    List<Options> findByIsFeeTrue();
+
+    List<Options> findByOptionCodeIn(List<String> optionCodes);
+
+    @Query("SELECT o FROM Options o WHERE o.isFee = true AND :optionCode IN ELEMENTS(o.applicableOptionsCodes)")
+    List<Options> findFeeOptionsByApplicableCode(@Param("optionCode") String optionCode);
 
 }

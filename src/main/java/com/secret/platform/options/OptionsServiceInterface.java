@@ -5,6 +5,11 @@ import java.util.Optional;
 
 public interface OptionsServiceInterface {
     List<Options> getAllOptions();
+
+    List<Options> resOptionsGetAll();
+
+    List<Options> findOptionsByAppendedOptSetCode(String optSetCode);
+
     Optional<Options> getOptionById(Long id);
     Options createOption(Options option);
     Options updateOption(Long id, Options optionDetails);
@@ -12,4 +17,6 @@ public interface OptionsServiceInterface {
     Options findByOptionCode(String optionCode);
 
     List<Options> findByOptSetCode(String optSetCode);
+
+    List<Options> searchByFeesAppliedToOptCode(String optionCode);
 }

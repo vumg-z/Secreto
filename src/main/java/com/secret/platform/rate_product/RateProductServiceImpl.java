@@ -5,6 +5,7 @@ import com.secret.platform.class_code.ClassCodeDTO;
 import com.secret.platform.class_code.ClassCodeRepository;
 import com.secret.platform.exception.ResourceNotFoundException;
 import com.secret.platform.location.Location;
+import com.secret.platform.location.LocationService;
 import com.secret.platform.option_set.OptionSet;
 import com.secret.platform.option_set.OptionSetRepository;
 import com.secret.platform.options.Options;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class RateProductServiceImpl implements RateProductService {
@@ -44,11 +46,44 @@ public class RateProductServiceImpl implements RateProductService {
     @Autowired
     private ValidTypeCodeRepository validTypeCodeRepository;
 
+    @Autowired
+    private LocationService locationService;
+
     // coverage codes
     private static final String CVG1_CODE = "LDW";
     private static final String CVG2_CODE = "PAI";
     private static final String CVG3_CODE = "XYZ";
     private static final String CVG4_CODE = "ABC";
+
+    @Override
+    public List<String> findRateProductByName(String rateProductName) {
+        List<RateProduct> rateProducts = rateProductRepository.findAllByProduct(rateProductName);
+        return rateProducts.stream()
+                .map(RateProduct::getProduct)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<RateProduct> getSpecificRateProduct(String locationCode, String countryCode, String rateProductName) {
+        // Retrieve the RateSet code associated with the given location code
+        String rateSetCode = locationService.getRateSet(locationCode);
+
+        // Modify the RateSet code based on the countryCode
+        String modifiedRateSetCode;
+        if (countryCode == null || countryCode.isEmpty()) {
+            modifiedRateSetCode = rateSetCode + "/*";
+        } else if (countryCode.equals("MX")) {
+            modifiedRateSetCode = rateSetCode + "/MX";
+        } else if (countryCode.equals("US")) {
+            modifiedRateSetCode = rateSetCode + "/US";
+        } else {
+            throw new IllegalArgumentException("Unsupported country code: " + countryCode);
+        }
+
+        // Find the RateProduct by modified RateSet code and product name
+        return rateProductRepository.findByProductAndRateSet_RateSetCode(rateProductName, modifiedRateSetCode);
+    }
 
     @Override
     public List<RateProduct> getAllRateProducts() {
@@ -241,18 +276,13 @@ public class RateProductServiceImpl implements RateProductService {
     }
 
     private String getOptionCode(String coverageKey) {
-        switch (coverageKey) {
-            case "CVG1":
-                return CVG1_CODE;
-            case "CVG2":
-                return CVG2_CODE;
-            case "CVG3":
-                return CVG3_CODE;
-            case "CVG4":
-                return CVG4_CODE;
-            default:
-                return coverageKey;
-        }
+        return switch (coverageKey) {
+            case "CVG1" -> CVG1_CODE;
+            case "CVG2" -> CVG2_CODE;
+            case "CVG3" -> CVG3_CODE;
+            case "CVG4" -> CVG4_CODE;
+            default -> coverageKey;
+        };
     }
 
     @Override
@@ -279,10 +309,11 @@ public class RateProductServiceImpl implements RateProductService {
             throw new IllegalArgumentException("Class code list cannot be empty.");
         }
 
-        // Get the RateProduct using the rateProductNumber from the first DTO (assuming all have the same rateProductNumber)
         String rateProductNumber = classCodeDTOs.get(0).getRateProductNumber();
-        RateProduct rateProduct = rateProductRepository.findByProduct(rateProductNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("RateProduct not found with product number " + rateProductNumber));
+        String rateSetCode = classCodeDTOs.get(0).getRateSetCode();
+
+        RateProduct rateProduct = rateProductRepository.findByProductAndRateSet_RateSetCode(rateProductNumber, rateSetCode)
+                .orElseThrow(() -> new ResourceNotFoundException("RateProduct not found with product number " + rateProductNumber + " and rate set code " + rateSetCode));
 
         for (ClassCodeDTO classCodeDTO : classCodeDTOs) {
             ClassCode classCode = classCodeRepository.findByClassCode(classCodeDTO.getClassCode())
@@ -300,6 +331,10 @@ public class RateProductServiceImpl implements RateProductService {
         }
 
         rateProduct.getClassCodes().addAll(classCodeRepository.findByRateProduct(rateProduct));
+
+        logger.info("RateProduct before saving: xDayRate = {}, weekRate = {}", rateProduct.getXDayRate(), rateProduct.getWeekRate());
+
         return rateProductRepository.save(rateProduct);
     }
+
 }

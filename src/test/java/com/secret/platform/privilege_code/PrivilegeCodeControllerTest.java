@@ -56,6 +56,27 @@ public class PrivilegeCodeControllerTest {
     }
 
     @Test
+    void testCreatePrivilegeCodeWithOptionSetCodeString() throws Exception {
+        // Create a PrivilegeCode object with optionSetCodeString
+        privilegeCode.setOptionSetCodeString("OPTION_SET_CODE");
+
+        // Mock the service layer to return this privilegeCode object
+        when(privilegeCodeService.createPrivilegeCode(any(PrivilegeCode.class))).thenReturn(privilegeCode);
+
+        // Perform the POST request
+        mockMvc.perform(post("/api/privilege-codes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(privilegeCode)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("CODE"))
+                .andExpect(jsonPath("$.optionSetCodeString").value("OPTION_SET_CODE")); // Validate optionSetCodeString
+
+        // Verify the service interaction
+        verify(privilegeCodeService, times(1)).createPrivilegeCode(any(PrivilegeCode.class));
+    }
+
+
+    @Test
     void testGetPrivilegeCodeById() throws Exception {
         when(privilegeCodeService.getPrivilegeCodeById(anyLong())).thenReturn(Optional.of(privilegeCode));
 
@@ -80,38 +101,38 @@ public class PrivilegeCodeControllerTest {
     void testCreatePrivilegeCode() throws Exception {
         when(privilegeCodeService.createPrivilegeCode(any(PrivilegeCode.class))).thenReturn(privilegeCode);
 
-        //mockMvc.perform(post("/api/privilege-codes")
-                       // .contentType(MediaType.APPLICATION_JSON)
-                     //   .content(new ObjectMapper().writeValueAsString(privilegeCode)))
-//                .andExpect(status().isOk())
-  //              .andExpect(jsonPath("$.code").value("CODE"));
+        mockMvc.perform(post("/api/privilege-codes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                  .content(new ObjectMapper().writeValueAsString(privilegeCode)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("CODE"));
 
-//        verify(privilegeCodeService, times(1)).createPrivilegeCode(any(PrivilegeCode.class));
+        verify(privilegeCodeService, times(1)).createPrivilegeCode(any(PrivilegeCode.class));
     }
 
     @Test
     void testUpdatePrivilegeCode() throws Exception {
         when(privilegeCodeService.updatePrivilegeCode(anyLong(), any(PrivilegeCode.class))).thenReturn(privilegeCode);
 
-       // mockMvc.perform(put("/api/privilege-codes/1")
-               //         .contentType(MediaType.APPLICATION_JSON)
-             //           .content(new ObjectMapper().writeValueAsString(privilegeCode)))
-//                .andExpect(status().isOk())
-  //              .andExpect(jsonPath("$.code").value("CODE"));
+        mockMvc.perform(put("/api/privilege-codes/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(privilegeCode)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("CODE"));
 
-//        verify(privilegeCodeService, times(1)).updatePrivilegeCode(anyLong(), any(PrivilegeCode.class));
+        verify(privilegeCodeService, times(1)).updatePrivilegeCode(anyLong(), any(PrivilegeCode.class));
     }
 
     @Test
     void testUpdatePrivilegeCode_NotFound() throws Exception {
         when(privilegeCodeService.updatePrivilegeCode(anyLong(), any(PrivilegeCode.class))).thenThrow(new ResourceNotFoundException("PrivilegeCode not found with id 1"));
 
-       // mockMvc.perform(put("/api/privilege-codes/1")
-                     //   .contentType(MediaType.APPLICATION_JSON)
-                   //     .content(new ObjectMapper().writeValueAsString(privilegeCode)))
-//                .andExpect(status().isNotFound());
+        mockMvc.perform(put("/api/privilege-codes/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(privilegeCode)))
+                .andExpect(status().isNotFound());
 
-//        verify(privilegeCodeService, times(1)).updatePrivilegeCode(anyLong(), any(PrivilegeCode.class));
+        verify(privilegeCodeService, times(1)).updatePrivilegeCode(anyLong(), any(PrivilegeCode.class));
     }
 
     @Test

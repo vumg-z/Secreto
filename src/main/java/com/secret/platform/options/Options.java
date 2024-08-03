@@ -1,5 +1,6 @@
 package com.secret.platform.options;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.secret.platform.general_ledger.GeneralLedger;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -7,7 +8,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name = "options")
@@ -21,7 +24,7 @@ public class Options {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "opt_code", nullable = false, unique = true, length = 10)
+    @Column(name = "opt_code", nullable = false, unique = false, length = 10)
     private String optionCode;
 
     @Column(name = "short_desc")
@@ -29,6 +32,9 @@ public class Options {
 
     @Column(name = "long_desc")
     private String longDesc;
+
+    @Column(name = "bundle", columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean bundle = false;
 
     /*
     typeFlag
@@ -303,8 +309,29 @@ public class Options {
      For details on how to set up and use this feature, refer to the chapter Overview - Option Discounts, Bundles, and /Packages.
      */
 
+    // options entity
+
     @Column(name = "opt_set_code")
     private String optSetCode;
+
+    @ElementCollection
+    @CollectionTable(name = "opt_set_code_appended", joinColumns = @JoinColumn(name = "option_id"))
+    @Column(name = "opt_set_code")
+    private List<String> optSetCodeAppended = new ArrayList<>();
+
+
+    // private List<String> applicableOptionsCodes;
+
+    @ElementCollection
+    @CollectionTable(name = "applicable_options_codes", joinColumns = @JoinColumn(name = "option_id"))
+    @Column(name = "applicable_option_code")
+    private List<String> applicableOptionsCodes = new ArrayList<>();
+
+
+    @Column(name = "is_fee")
+    @JsonProperty("isFee")
+    private boolean isFee;
+
 
     @Override
     public String toString() {

@@ -61,6 +61,8 @@ public class RateProductController {
     @PostMapping("/add-classes")
     public ResponseEntity<RateProduct> addClassesToRateProduct(@RequestBody List<ClassCodeDTO> classCodeDTOs) {
         RateProduct updatedRateProduct = rateProductService.addClassesToRateProduct(classCodeDTOs);
+        logger.info("Returning RateProduct: xDayRate = {}, weekRate = {}", updatedRateProduct.getXDayRate(), updatedRateProduct.getWeekRate());
         return ResponseEntity.ok(updatedRateProduct);
     }
+
 }
