@@ -104,7 +104,7 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         allChargeItems.addAll(optionChargeItems);
 
         // Calculate fees based on option charges (excluding time-related charges)
-        List<ResEstimatesResponseDTO.Charge> feeChargeItems = calculateFees(allChargeItems);
+        List<ResEstimatesResponseDTO.Charge> feeChargeItems = calculateFees(allChargeItems, resEstimatesDTO, currency);
         allChargeItems.addAll(feeChargeItems);
 
         // Build the response DTO
@@ -118,6 +118,117 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         chargeItems.addAll(allChargeItems);
 
         return createEstimatesResponse(resEstimatesDTO, requestedClassCode, pickupDateTime, returnDateTime, rateProduct, chargeItems);
+    }
+
+    private List<ResEstimatesResponseDTO.Charge> calculateFees(
+            List<ResEstimatesResponseDTO.Charge> chargeItems,
+            ResEstimatesDTO resEstimatesDTO,
+            String currency) {
+
+        List<ResEstimatesResponseDTO.Charge> feeChargeItems = new ArrayList<>();
+
+        // Calculate the total of non-time-related charges (including specific option charges like FC03)
+        double nonTimeRelatedTotal = chargeItems.stream()
+                .filter(charge -> !(charge.getCode().equals("WEEKS") || charge.getCode().equals("XDAYS") || charge.getCode().equals("MONTHS")))
+                .mapToDouble(charge -> Double.parseDouble(charge.getTotal()))
+                .sum();
+
+        logger.info("Total of non-time-related charges for fee calculation: {}", nonTimeRelatedTotal);
+
+        // Use a map to dynamically handle fees and their calculated amounts
+        Map<String, Double> feeAmounts = new HashMap<>();
+
+        // List of fee codes to be calculated (exclude TAX for now)
+        List<String> applicableFeeCodes = List.of("LOCN", "LRF");
+
+        // Calculate each fee and store in the map
+        for (String feeCode : applicableFeeCodes) {
+            double feeAmount = calculateFeeForCode(feeCode, nonTimeRelatedTotal, feeChargeItems, resEstimatesDTO, currency);
+            feeAmounts.put(feeCode, feeAmount);
+        }
+
+        // Calculate TAX based on the accumulated fees and non-time-related charges
+        double taxableAmount = nonTimeRelatedTotal + feeAmounts.values().stream().mapToDouble(Double::doubleValue).sum();
+        addTaxCharge(taxableAmount, feeChargeItems, resEstimatesDTO, currency);
+
+        return feeChargeItems;
+    }
+
+    private double calculateFeeForCode(
+            String feeCode,
+            double baseAmount,
+            List<ResEstimatesResponseDTO.Charge> feeChargeItems,
+            ResEstimatesDTO resEstimatesDTO,
+            String currency) {
+
+        Options feeOption = optionsService.findByOptionCode(feeCode);
+        if (feeOption != null) {
+            OptionsRates feeRates = optionsRatesService.findRatesByCriteriaAndCurrency(
+                    feeCode,
+                    "DF",
+                    "DF",
+                    "DF"
+            ).stream().findFirst().orElse(null);
+
+            if (feeRates != null) {
+                double feeRate = feeRates.getPrimaryRate();
+                double feeAmount = baseAmount * (feeRate / 100); // Assuming fee is percentage-based
+                logger.info("Calculated fee for {}: FeeRate={}%, FeeAmount={}", feeCode, feeRate, feeAmount);
+
+                ResEstimatesResponseDTO.Charge feeCharge = new ResEstimatesResponseDTO.Charge();
+                feeCharge.setCode(feeCode);
+                feeCharge.setDescription(feeOption.getLongDesc());
+                feeCharge.setQuantity("1");
+                feeCharge.setTotal(String.format("%.2f", feeAmount));
+
+                feeChargeItems.add(feeCharge);
+                logger.info("Added fee charge item for option: {}", feeCharge);
+
+                return feeAmount;
+            } else {
+                logger.warn("No rates found for fee option: {}", feeCode);
+            }
+        } else {
+            logger.warn("No fee option found for code: {}", feeCode);
+        }
+        return 0.0;
+    }
+
+    private void addTaxCharge(
+            double taxableAmount,
+            List<ResEstimatesResponseDTO.Charge> feeChargeItems,
+            ResEstimatesDTO resEstimatesDTO,
+            String currency) {
+
+        String feeCode = "TAX";
+        Options feeOption = optionsService.findByOptionCode(feeCode);
+        if (feeOption != null) {
+            OptionsRates feeRates = optionsRatesService.findRatesByCriteriaAndCurrency(
+                    feeCode,
+                    "DF",
+                    "DF",
+                    "DF"
+            ).stream().findFirst().orElse(null);
+
+            if (feeRates != null) {
+                double feeRate = feeRates.getPrimaryRate();
+                double feeAmount = taxableAmount * (feeRate / 100); // Assuming fee is percentage-based
+                logger.info("Calculated TAX for {}: FeeRate={}%, FeeAmount={}", feeCode, feeRate, feeAmount);
+
+                ResEstimatesResponseDTO.Charge feeCharge = new ResEstimatesResponseDTO.Charge();
+                feeCharge.setCode(feeCode);
+                feeCharge.setDescription(feeOption.getLongDesc());
+                feeCharge.setQuantity("1");
+                feeCharge.setTotal(String.format("%.2f", feeAmount));
+
+                feeChargeItems.add(feeCharge);
+                logger.info("Added TAX charge item for option: {}", feeCharge);
+            } else {
+                logger.warn("No rates found for TAX option: {}", feeCode);
+            }
+        } else {
+            logger.warn("No TAX option found for code: {}", feeCode);
+        }
     }
 
     private void processBundleOptions(ResEstimatesDTO.Option option, long totalDays, String currency, List<ResEstimatesResponseDTO.Charge> bundleChargeItems, ResEstimatesDTO resEstimatesDTO) {
@@ -291,9 +402,6 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
             logger.warn("No TAX option found for code: {}", feeCode);
         }
     }
-
-
-
 
     private String getPricingCodeFromClassCode(String classCode) {
         logger.debug("Fetching pricing code for classCode: {}", classCode);
@@ -604,8 +712,6 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
         logger.info("Response created: {}", response);
     }
 
-
-
     private List<ResEstimatesResponseDTO.Charge> calculateCharges(ClassCode classCode, LocalDateTime pickupDateTime, LocalDateTime returnDateTime) {
         List<ResEstimatesResponseDTO.Charge> charges = new ArrayList<>();
         long totalDays = ChronoUnit.DAYS.between(pickupDateTime, returnDateTime);
@@ -632,7 +738,6 @@ public class ResEstimatesService implements ResRatesEstimatesServiceInterface {
 
         return charges;
     }
-
 
     private void createEmptyResponse(ResEstimatesResponseDTO response) {
         ResEstimatesResponseDTO.ResEstimate resEstimate = new ResEstimatesResponseDTO.ResEstimate();

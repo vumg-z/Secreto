@@ -28,8 +28,8 @@ def main():
         },
         {
             "optionCode": "TAX",
-            "shortDesc": "TAX Fee Short Desc",
-            "longDesc": "TAX Fee Long Desc",
+            "shortDesc": "TAX FEE",
+            "longDesc": "TAX FEE",
             "typeFlag": "T",
             "glAccount": None,
             "echo": "N",

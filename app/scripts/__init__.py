@@ -1,4 +1,6 @@
 # scripts/__init__.py
+import os
+
 
 def run_all_scripts():
     from scripts.populate_type_codes import main as populate_type_codes_main
@@ -112,3 +114,14 @@ def run_all_scripts():
     populate_fees_rates_main()
 
     print("All scripts executed.")
+
+
+    # Print the current working directory
+    print("Current working directory:", os.getcwd())
+
+    # Open and read the file
+    with open('kirby.txt', 'r') as file:
+        contents = file.read()
+
+    print(contents)
+
