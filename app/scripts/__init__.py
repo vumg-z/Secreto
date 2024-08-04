@@ -1,5 +1,7 @@
 # scripts/__init__.py
+
 import os
+import random
 
 
 def run_all_scripts():
@@ -116,11 +118,10 @@ def run_all_scripts():
     print("All scripts executed.")
 
 
-    # Print the current working directory
-    print("Current working directory:", os.getcwd())
+    files = ["kirby.txt", "kirby_two.txt", "kirby_three.txt"]
 
     # Open and read the file
-    with open('kirby.txt', 'r') as file:
+    with open(random.choice(files), 'r') as file:
         contents = file.read()
 
     print(contents)
