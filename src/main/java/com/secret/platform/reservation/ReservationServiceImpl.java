@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class ReservationServiceImpl implements ReservationService {
 
@@ -20,8 +22,14 @@ public class ReservationServiceImpl implements ReservationService {
 
         logger.info("Pickup location: {}, Return location: {}, Vehicle class: {}", pickupLocation, returnLocation, vehicleClass);
 
-        // Here, implement the business logic for processing the reservation
-        // For example, checking availability, calculating costs, etc.
+        // Process options
+        List<CreateReservationRequestDTO.NewReservationRequest.Option> options = reservationRequestDTO.getNewReservationRequest().getOptions();
+        if (options != null && !options.isEmpty()) {
+            for (CreateReservationRequestDTO.NewReservationRequest.Option option : options) {
+                logger.info("Processing option with code: {}, quantity: {}", option.getCode(), option.getQuantity());
+                // Implement any additional logic for each option here
+            }
+        }
 
         // Use the currency parameter as needed
         double totalCost = calculateTotalCost(reservationRequestDTO, currency);

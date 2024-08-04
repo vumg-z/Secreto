@@ -1,6 +1,7 @@
 package com.secret.platform.reservation;
 
 import com.secret.platform.resEstimates.LocalDateTimeAdapter;
+import com.secret.platform.customer.CustomerDTO;
 import jakarta.xml.bind.annotation.*;
 import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import lombok.AllArgsConstructor;
@@ -8,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @XmlRootElement(name = "Request")
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -47,13 +49,17 @@ public class CreateReservationRequestDTO {
         private Vehicle vehicle;
 
         @XmlElement(name = "Renter")
-        private Renter renter;
+        private CustomerDTO customer;  // Use the Customer entity here
 
         @XmlElement(name = "QuotedRate")
         private QuotedRate quotedRate;
 
         @XmlElement(name = "LocalPhone")
         private String localPhone;
+
+        @XmlElementWrapper(name = "Options")
+        @XmlElement(name = "Option")
+        private List<Option> options;
 
         @XmlElement(name = "ReservationMainNote")
         private String reservationMainNote;
@@ -109,45 +115,6 @@ public class CreateReservationRequestDTO {
         public static class Vehicle {
             @XmlAttribute(name = "classCode")
             private String classCode;
-        }
-
-        @Data
-        @NoArgsConstructor
-        @AllArgsConstructor
-        @XmlAccessorType(XmlAccessType.FIELD)
-        public static class Renter {
-            @XmlElement(name = "RenterName")
-            private RenterName renterName;
-
-            @XmlElement(name = "Address")
-            private Address address;
-
-            @Data
-            @NoArgsConstructor
-            @AllArgsConstructor
-            @XmlAccessorType(XmlAccessType.FIELD)
-            public static class RenterName {
-                @XmlAttribute(name = "firstName")
-                private String firstName;
-
-                @XmlAttribute(name = "lastName")
-                private String lastName;
-            }
-
-            @Data
-            @NoArgsConstructor
-            @AllArgsConstructor
-            @XmlAccessorType(XmlAccessType.FIELD)
-            public static class Address {
-                @XmlElement(name = "Email")
-                private String email;
-
-                @XmlElement(name = "WorkTelephoneNumber")
-                private String workTelephoneNumber;
-
-                @XmlElement(name = "CellTelephoneNumber")
-                private String cellTelephoneNumber;
-            }
         }
 
         @Data
@@ -214,6 +181,18 @@ public class CreateReservationRequestDTO {
                 @XmlAttribute(name = "Cnf")
                 private String confirmation;
             }
+        }
+
+        @Data
+        @NoArgsConstructor
+        @AllArgsConstructor
+        @XmlAccessorType(XmlAccessType.FIELD)
+        public static class Option {
+            @XmlElement(name = "Code")
+            private String code;
+
+            @XmlElement(name = "Qty")
+            private int quantity;
         }
     }
 }
