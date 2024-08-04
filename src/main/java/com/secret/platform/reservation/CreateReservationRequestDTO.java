@@ -49,7 +49,7 @@ public class CreateReservationRequestDTO {
         private Vehicle vehicle;
 
         @XmlElement(name = "Renter")
-        private CustomerDTO customer;  // Use the Customer entity here
+        private CustomerDTO customer;
 
         @XmlElement(name = "QuotedRate")
         private QuotedRate quotedRate;
