@@ -1,5 +1,6 @@
 package com.secret.platform.reservation;
 
+import ch.qos.logback.core.status.Status;
 import com.secret.platform.customer.Customer;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -35,6 +36,15 @@ public class Reservation {
     private double totalCostAmount;
     private String localPhone;
 
+    private String reservationNotes;
+
+    private String productCode;
+    private double dayRate;
+    private double weekRate;
+    private double monthRate;
+    private double xdayRate;
+
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id")
     private Customer customer;
@@ -43,6 +53,9 @@ public class Reservation {
     @CollectionTable(name = "reservation_options", joinColumns = @JoinColumn(name = "reservation_id"))
     private List<ReservationOption> options;
 
+    @Enumerated(EnumType.STRING)
+    private Status status;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -50,5 +63,10 @@ public class Reservation {
     public static class ReservationOption {
         private String code;
         private int quantity;
+    }
+
+    public enum Status {
+        ACTIVE,
+        CANCELED
     }
 }

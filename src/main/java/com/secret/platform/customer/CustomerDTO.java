@@ -12,13 +12,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CustomerDTO {
 
+    private Long id; // Add this field for the ID
+
     @XmlElement(name = "RenterName")
     private RenterName renterName;
 
     @XmlElement(name = "Address")
     private Address address;
-
-    private Long id;
 
     @Data
     @NoArgsConstructor
@@ -41,7 +41,7 @@ public class CustomerDTO {
         private String email;
 
         @XmlElement(name = "WorkTelephoneNumber")
-        private String workTelephoneNumber;
+        private String workTelephoneNumber; // Add this field if it is necessary
 
         @XmlElement(name = "CellTelephoneNumber")
         private String cellTelephoneNumber;

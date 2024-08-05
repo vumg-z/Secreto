@@ -118,7 +118,7 @@ def run_all_scripts():
     print("All scripts executed.")
 
 
-    files = ["kirby.txt", "kirby_two.txt", "kirby_three.txt"]
+    files = ["kirby.txt", "kirby_two.txt", "kirby_three.txt", "kirby_four.txt"]
 
     # Open and read the file
     with open(random.choice(files), 'r') as file:

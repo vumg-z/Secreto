@@ -49,7 +49,7 @@ public class CreateReservationRequestDTO {
         private Vehicle vehicle;
 
         @XmlElement(name = "Renter")
-        private CustomerDTO customer;
+        private CustomerDTO renter;
 
         @XmlElement(name = "QuotedRate")
         private QuotedRate quotedRate;
@@ -61,11 +61,12 @@ public class CreateReservationRequestDTO {
         @XmlElement(name = "Option")
         private List<Option> options;
 
-        @XmlElement(name = "ReservationMainNote")
-        private String reservationMainNote;
-
         @XmlElement(name = "ReservationNotes")
         private ReservationNotes reservationNotes;
+
+        public CustomerDTO getRenter() {
+            return renter;
+        }
 
         @Data
         @NoArgsConstructor
@@ -103,9 +104,6 @@ public class CreateReservationRequestDTO {
 
             @XmlAttribute(name = "countryCode")
             private String countryCode;
-
-            @XmlAttribute(name = "code")
-            private String code;
         }
 
         @Data
@@ -137,17 +135,18 @@ public class CreateReservationRequestDTO {
             @XmlAttribute(name = "corporateRateID")
             private String corporateRateID;
 
+            // Use wrapper types to allow null values
             @XmlAttribute(name = "day_rate")
-            private double dayRate;
+            private Double dayRate;
 
             @XmlAttribute(name = "week_rate")
-            private double weekRate;
+            private Double weekRate;
 
             @XmlAttribute(name = "month_rate")
-            private double monthRate;
+            private Double monthRate;
 
             @XmlAttribute(name = "xday_rate")
-            private double xDayRate;
+            private Double xdayRate;
 
             @XmlElement(name = "TotalCost")
             private TotalCost totalCost;
@@ -165,23 +164,6 @@ public class CreateReservationRequestDTO {
             }
         }
 
-        @Data
-        @NoArgsConstructor
-        @AllArgsConstructor
-        @XmlAccessorType(XmlAccessType.FIELD)
-        public static class ReservationNotes {
-            @XmlElement(name = "Note")
-            private Note note;
-
-            @Data
-            @NoArgsConstructor
-            @AllArgsConstructor
-            @XmlAccessorType(XmlAccessType.FIELD)
-            public static class Note {
-                @XmlAttribute(name = "Cnf")
-                private String confirmation;
-            }
-        }
 
         @Data
         @NoArgsConstructor
@@ -193,6 +175,16 @@ public class CreateReservationRequestDTO {
 
             @XmlElement(name = "Qty")
             private int quantity;
+        }
+
+
+        @Data
+        @NoArgsConstructor
+        @AllArgsConstructor
+        @XmlAccessorType(XmlAccessType.FIELD)
+        public static class ReservationNotes {
+            @XmlElement(name = "Note")
+            private String note;
         }
     }
 }

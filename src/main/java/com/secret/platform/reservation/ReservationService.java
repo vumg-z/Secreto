@@ -7,9 +7,13 @@ public interface ReservationService {
 
     ReservationResponseDTO saveReservation(CreateReservationRequestDTO reservationRequestDTO);
 
+    ReservationResponseDTO saveReservation(CreateReservationRequestDTO reservationRequestDTO, String currency);
+
     Optional<Reservation> getReservationById(Long reservationId);
 
     List<Reservation> getAllReservations();
 
     void deleteReservation(Long reservationId);
+
+
 }

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +17,9 @@ import java.io.StringWriter;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -65,5 +70,13 @@ public class GlobalExceptionHandler {
             e.printStackTrace();
             return null;
         }
+    }
+
+
+
+    @ExceptionHandler(CustomerNotFoundException.class)
+    public ResponseEntity<String> handleCustomerNotFoundException(CustomerNotFoundException e) {
+        logger.warn("Customer not found: ", e);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Customer not found.");
     }
 }

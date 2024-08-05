@@ -7,6 +7,7 @@ public class CustomerMapper {
             return null;
         }
         return new CustomerDTO(
+                customer.getId(),
                 new CustomerDTO.RenterName(customer.getFirstName(), customer.getLastName()),
                 new CustomerDTO.Address(customer.getEmail(), customer.getWorkTelephoneNumber(), customer.getCellTelephoneNumber())
         );
@@ -17,6 +18,7 @@ public class CustomerMapper {
             return null;
         }
         Customer customer = new Customer();
+        customer.setId(customerDTO.getId());
         customer.setFirstName(customerDTO.getRenterName().getFirstName());
         customer.setLastName(customerDTO.getRenterName().getLastName());
         customer.setEmail(customerDTO.getAddress().getEmail());
