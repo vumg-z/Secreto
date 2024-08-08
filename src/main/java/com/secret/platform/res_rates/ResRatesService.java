@@ -92,6 +92,25 @@ public class ResRatesService implements ResRatesServiceInterface {
 
         return response;
     }
+    double calculateEstimate(ClassCode classCode, LocalDateTime pickupDateTime, LocalDateTime returnDateTime) {
+        long totalDays = ChronoUnit.DAYS.between(pickupDateTime, returnDateTime);
+
+        // Rates
+        double dayRate = classCode.getDayRate();
+        double weekRate = classCode.getWeekRate();
+        double monthRate = classCode.getMonthRate();
+
+        // Calculate the number of full months, weeks, and remaining days
+        long months = totalDays / 30;
+        long remainingDaysAfterMonths = totalDays % 30;
+        long weeks = remainingDaysAfterMonths / 7;
+        long days = remainingDaysAfterMonths % 7;
+
+        // Calculate the total estimate
+        double estimate = (months * monthRate) + (weeks * weekRate) + (days * dayRate);
+
+        return estimate;
+    }
 
     void validateDates(LocalDateTime pickupDateTime, LocalDateTime returnDateTime) {
         LocalDateTime now = LocalDateTime.now();
@@ -117,25 +136,6 @@ public class ResRatesService implements ResRatesServiceInterface {
                 + locationCode + ", country: " + countryCode + ", product: " + rateProductName));
     }
 
-    double calculateEstimate(ClassCode classCode, LocalDateTime pickupDateTime, LocalDateTime returnDateTime) {
-        long totalDays = ChronoUnit.DAYS.between(pickupDateTime, returnDateTime);
-
-        // Rates
-        double dayRate = classCode.getDayRate();
-        double weekRate = classCode.getWeekRate();
-        double monthRate = classCode.getMonthRate();
-
-        // Calculate the number of full months, weeks, and remaining days
-        long months = totalDays / 30;
-        long remainingDaysAfterMonths = totalDays % 30;
-        long weeks = remainingDaysAfterMonths / 7;
-        long days = remainingDaysAfterMonths % 7;
-
-        // Calculate the total estimate
-        double estimate = (months * monthRate) + (weeks * weekRate) + (days * dayRate);
-
-        return estimate;
-    }
 
 
 

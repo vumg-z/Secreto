@@ -139,9 +139,13 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Override
-    public List<Reservation> getAllReservations() {
-        return reservationRepository.findAllByStatus(Reservation.Status.ACTIVE);
+    public List<ReservationDTO> getAllReservations() {
+        List<Reservation> reservations = reservationRepository.findAllByStatusWithEagerFetch(Reservation.Status.ACTIVE);
+        return reservations.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
+
 
     @Override
     public void deleteReservation(Long reservationId) {
@@ -155,26 +159,31 @@ public class ReservationServiceImpl implements ReservationService {
         }
     }
 
-    public List<Reservation> getReservationsByCustomerName(String firstName, String lastName) {
+    public List<ReservationDTO> getReservationsByCustomerName(String firstName, String lastName) {
         logger.info("Searching for active reservations by customer name: {} {}", firstName, lastName);
 
         List<Customer> customers = customerRepository.findByFirstNameAndLastName(firstName, lastName);
 
-        List<Reservation> reservations = customers.stream()
+        List<ReservationDTO> reservations = customers.stream()
                 .flatMap(customer -> reservationRepository.findByCustomerAndStatus(customer, Reservation.Status.ACTIVE).stream())
+                .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
         logger.info("Found {} active reservations for customer {} {}", reservations.size(), firstName, lastName);
         return reservations;
     }
 
-    public List<Reservation> getReservationsByCustomerEmail(String email) {
+
+    public List<ReservationDTO> getReservationsByCustomerEmail(String email) {
         logger.info("Searching for active reservations by customer email: {}", email);
 
         Optional<Customer> customer = customerRepository.findByEmail(email);
 
         if (customer.isPresent()) {
-            List<Reservation> reservations = reservationRepository.findByCustomerAndStatus(customer.get(), Reservation.Status.ACTIVE);
+            List<ReservationDTO> reservations = reservationRepository.findByCustomerAndStatus(customer.get(), Reservation.Status.ACTIVE)
+                    .stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
 
             logger.info("Found {} active reservations for customer email {}", reservations.size(), email);
             return reservations;
@@ -184,18 +193,21 @@ public class ReservationServiceImpl implements ReservationService {
         }
     }
 
-    public List<Reservation> getReservationsByCustomerPhoneNumber(String phoneNumber) {
+
+    public List<ReservationDTO> getReservationsByCustomerPhoneNumber(String phoneNumber) {
         logger.info("Searching for active reservations by customer phone number: {}", phoneNumber);
 
         List<Customer> customers = customerRepository.findByWorkTelephoneNumberOrCellTelephoneNumber(phoneNumber, phoneNumber);
 
-        List<Reservation> reservations = customers.stream()
+        List<ReservationDTO> reservations = customers.stream()
                 .flatMap(customer -> reservationRepository.findByCustomerAndStatus(customer, Reservation.Status.ACTIVE).stream())
+                .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
         logger.info("Found {} active reservations for phone number {}", reservations.size(), phoneNumber);
         return reservations;
     }
+
 
     // Helper method to provide a default value
     private double getOrDefault(Double value, double defaultValue) {
@@ -222,5 +234,56 @@ public class ReservationServiceImpl implements ReservationService {
             logger.error("Reservation {} not found or customer last name does not match.", reservationNumber);
             throw new RuntimeException("Reservation not found or customer details incorrect.");
         }
+    }
+
+    private ReservationDTO convertToDTO(Reservation reservation) {
+        // Map the Customer entity to a DTO
+        CustomerDTO customerDTO = null;
+        if (reservation.getCustomer() != null) {
+            customerDTO = new CustomerDTO(
+                    reservation.getCustomer().getId(),
+                    new CustomerDTO.RenterName(
+                            reservation.getCustomer().getFirstName(),
+                            reservation.getCustomer().getLastName()
+                    ),
+                    new CustomerDTO.Address(
+                            reservation.getCustomer().getEmail(),
+                            reservation.getCustomer().getWorkTelephoneNumber(),
+                            reservation.getCustomer().getCellTelephoneNumber()
+                    )
+            );
+        }
+
+        // Map the ReservationOptions to DTOs
+        List<ReservationOptionDTO> options = reservation.getOptions().stream()
+                .map(option -> new ReservationOptionDTO(option.getCode(), option.getQuantity()))
+                .collect(Collectors.toList());
+
+        return new ReservationDTO(
+                reservation.getId(),
+                reservation.getReferenceNumber(),
+                reservation.getVersion(),
+                reservation.isConfirmAvailability(),
+                reservation.getPickupLocationCode(),
+                reservation.getPickupDateTime(),
+                reservation.getReturnLocationCode(),
+                reservation.getReturnDateTime(),
+                reservation.getSourceCountryCode(),
+                reservation.getConfirmationNumber(),
+                reservation.getVehicleClassCode(),
+                reservation.getCurrencyCode(),
+                reservation.getCorporateRateID(),
+                reservation.getTotalCostAmount(),
+                reservation.getLocalPhone(),
+                reservation.getReservationNotes(),
+                reservation.getProductCode(),
+                reservation.getDayRate(),
+                reservation.getWeekRate(),
+                reservation.getMonthRate(),
+                reservation.getXdayRate(),
+                customerDTO,
+                options,
+                reservation.getStatus().name() // Convert Enum to String
+        );
     }
 }

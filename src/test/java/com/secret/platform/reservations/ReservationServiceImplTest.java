@@ -38,7 +38,7 @@ public class ReservationServiceImplTest {
         Reservation reservation = new Reservation();
         reservation.setId(reservationId);
         reservation.setConfirmationNumber("CONF123");
-        reservation.setStatus(Reservation.Status.ACTIVE); // Set status to ACTIVE
+        reservation.setStatus(Reservation.Status.ACTIVE);
 
         when(reservationRepository.findByIdAndStatus(reservationId, Reservation.Status.ACTIVE))
                 .thenReturn(Optional.of(reservation));
@@ -60,11 +60,12 @@ public class ReservationServiceImplTest {
         Customer customer = new Customer();
         customer.setFirstName(firstName);
         customer.setLastName(lastName);
+        customer.setEmail("johndoe@example.com");
 
         Reservation reservation = new Reservation();
         reservation.setCustomer(customer);
         reservation.setConfirmationNumber("CONF123");
-        reservation.setStatus(Reservation.Status.ACTIVE); // Set status to ACTIVE
+        reservation.setStatus(Reservation.Status.ACTIVE);
 
         when(customerRepository.findByFirstNameAndLastName(firstName, lastName))
                 .thenReturn(List.of(customer));
@@ -72,7 +73,7 @@ public class ReservationServiceImplTest {
                 .thenReturn(List.of(reservation));
 
         // Act
-        List<Reservation> result = reservationService.getReservationsByCustomerName(firstName, lastName);
+        List<ReservationDTO> result = reservationService.getReservationsByCustomerName(firstName, lastName);
 
         // Assert
         assertEquals(1, result.size());
@@ -91,14 +92,14 @@ public class ReservationServiceImplTest {
         Reservation reservation = new Reservation();
         reservation.setCustomer(customer);
         reservation.setConfirmationNumber("CONF123");
-        reservation.setStatus(Reservation.Status.ACTIVE); // Set status to ACTIVE
+        reservation.setStatus(Reservation.Status.ACTIVE);
 
         when(customerRepository.findByEmail(email)).thenReturn(Optional.of(customer));
         when(reservationRepository.findByCustomerAndStatus(customer, Reservation.Status.ACTIVE))
                 .thenReturn(List.of(reservation));
 
         // Act
-        List<Reservation> result = reservationService.getReservationsByCustomerEmail(email);
+        List<ReservationDTO> result = reservationService.getReservationsByCustomerEmail(email);
 
         // Assert
         assertEquals(1, result.size());
@@ -113,11 +114,12 @@ public class ReservationServiceImplTest {
         String phoneNumber = "1234567890";
         Customer customer = new Customer();
         customer.setWorkTelephoneNumber(phoneNumber);
+        customer.setEmail("johndoe@example.com");
 
         Reservation reservation = new Reservation();
         reservation.setCustomer(customer);
         reservation.setConfirmationNumber("CONF123");
-        reservation.setStatus(Reservation.Status.ACTIVE); // Set status to ACTIVE
+        reservation.setStatus(Reservation.Status.ACTIVE);
 
         when(customerRepository.findByWorkTelephoneNumberOrCellTelephoneNumber(phoneNumber, phoneNumber))
                 .thenReturn(List.of(customer));
@@ -125,7 +127,7 @@ public class ReservationServiceImplTest {
                 .thenReturn(List.of(reservation));
 
         // Act
-        List<Reservation> result = reservationService.getReservationsByCustomerPhoneNumber(phoneNumber);
+        List<ReservationDTO> result = reservationService.getReservationsByCustomerPhoneNumber(phoneNumber);
 
         // Assert
         assertEquals(1, result.size());
@@ -144,7 +146,7 @@ public class ReservationServiceImplTest {
                 .thenReturn(Collections.emptyList());
 
         // Act
-        List<Reservation> result = reservationService.getReservationsByCustomerName(firstName, lastName);
+        List<ReservationDTO> result = reservationService.getReservationsByCustomerName(firstName, lastName);
 
         // Assert
         assertTrue(result.isEmpty());
@@ -160,7 +162,7 @@ public class ReservationServiceImplTest {
         when(customerRepository.findByEmail(email)).thenReturn(Optional.empty());
 
         // Act
-        List<Reservation> result = reservationService.getReservationsByCustomerEmail(email);
+        List<ReservationDTO> result = reservationService.getReservationsByCustomerEmail(email);
 
         // Assert
         assertTrue(result.isEmpty());
@@ -177,7 +179,7 @@ public class ReservationServiceImplTest {
                 .thenReturn(Collections.emptyList());
 
         // Act
-        List<Reservation> result = reservationService.getReservationsByCustomerPhoneNumber(phoneNumber);
+        List<ReservationDTO> result = reservationService.getReservationsByCustomerPhoneNumber(phoneNumber);
 
         // Assert
         assertTrue(result.isEmpty());

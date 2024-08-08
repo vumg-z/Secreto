@@ -17,6 +17,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 public class MultipleReservationsTest {
@@ -125,9 +127,9 @@ public class MultipleReservationsTest {
 
         // Verify reservations were created
         for (String email : emails) {
-            List<Reservation> reservations = reservationService.getReservationsByCustomerEmail(email);
-            assertFalse(reservations.isEmpty(), "Reservations should not be empty for " + email);
-            assertTrue(reservations.stream().anyMatch(res -> res.getCustomer().getEmail().equals(email)),
+            List<ReservationDTO> reservationDTOs = reservationService.getReservationsByCustomerEmail(email);
+            assertFalse(reservationDTOs.isEmpty(), "Reservations should not be empty for " + email);
+            assertTrue(reservationDTOs.stream().anyMatch(res -> res.getCustomer().getAddress().getEmail().equals(email)),
                     "Reservation for email " + email + " not found.");
         }
 

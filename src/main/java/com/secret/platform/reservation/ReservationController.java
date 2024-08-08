@@ -7,7 +7,6 @@ import jakarta.xml.bind.Unmarshaller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
@@ -70,7 +69,7 @@ public class ReservationController {
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<Reservation> getReservations(
+    public List<ReservationDTO> getReservations(
             @RequestParam(required = false) String firstName,
             @RequestParam(required = false) String lastName,
             @RequestParam(required = false) String email,
@@ -99,7 +98,6 @@ public class ReservationController {
             throw new RuntimeException("Failed to retrieve reservations.", e);
         }
     }
-
 
     @PostMapping(value = "/cancel", consumes = MediaType.APPLICATION_XML_VALUE, produces = MediaType.APPLICATION_XML_VALUE)
     public ReservationResponseDTO cancelReservation(@RequestBody String requestXml) {
